@@ -1,4 +1,5 @@
 *
 !.gitignore
-!migrations.sql
+!migrations
+!migrations/*
 !README.md
