@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/arinji2/vocab-thing/internal/models"
+	"github.com/arinji2/vocab-thing/internal/tools/types"
 )
 
 type UserModel struct {
@@ -39,10 +39,10 @@ func (m *UserModel) All(ctx context.Context) ([]models.User, error) {
 			return nil, fmt.Errorf("scanning user row: %w", err)
 		}
 
-		parsedTime, err := time.Parse(time.RFC3339, createdAtStr)
+		parsedTime, err := types.ParseDateTime(createdAtStr)
 		if err != nil {
 			fmt.Printf("Warning: could not parse createdAt '%s' for user %d: %v\n", createdAtStr, user.ID, err)
-			user.CreatedAt = time.Time{}
+			user.CreatedAt = types.DateTime{}
 		} else {
 			user.CreatedAt = parsedTime
 		}
@@ -59,4 +59,78 @@ func (m *UserModel) All(ctx context.Context) ([]models.User, error) {
 	}
 
 	return users, nil
+}
+
+func (m *UserModel) ByID(ctx context.Context, id string) (models.User, error) {
+	tx, err := m.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return models.User{}, fmt.Errorf("starting transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	query := `SELECT id, username, email, createdAt FROM users WHERE id = ?`
+
+	row := tx.QueryRowContext(ctx, query, id)
+
+	var user models.User
+	var createdAtStr string
+
+	err = row.Scan(&user.ID, &user.Username, &user.Email, &createdAtStr)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return models.User{}, fmt.Errorf("user not found with id %s: %w", id, err)
+		}
+		return models.User{}, fmt.Errorf("scanning user row: %w", err)
+	}
+
+	parsedTime, err := types.ParseDateTime(createdAtStr)
+	if err != nil {
+		fmt.Printf("Warning: could not parse createdAt '%s' for user %d: %v\n", createdAtStr, user.ID, err)
+		user.CreatedAt = types.DateTime{}
+	} else {
+		user.CreatedAt = parsedTime
+	}
+
+	if err := tx.Commit(); err != nil {
+		return models.User{}, fmt.Errorf("committing transaction: %w", err)
+	}
+
+	return user, nil
+}
+
+func (m *UserModel) ByUsername(ctx context.Context, username string) (models.User, error) {
+	tx, err := m.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return models.User{}, fmt.Errorf("starting transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	query := `SELECT id, username, email, createdAt FROM users WHERE username = ?`
+
+	row := tx.QueryRowContext(ctx, query, username)
+
+	var user models.User
+	var createdAtStr string
+
+	err = row.Scan(&user.ID, &user.Username, &user.Email, &createdAtStr)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return models.User{}, fmt.Errorf("user not found with username %s: %w", username, err)
+		}
+		return models.User{}, fmt.Errorf("scanning user row: %w", err)
+	}
+
+	parsedTime, err := types.ParseDateTime(createdAtStr)
+	if err != nil {
+		fmt.Printf("Warning: could not parse createdAt '%s' for user %d: %v\n", createdAtStr, user.ID, err)
+		user.CreatedAt = types.DateTime{}
+	} else {
+		user.CreatedAt = parsedTime
+	}
+
+	if err := tx.Commit(); err != nil {
+		return models.User{}, fmt.Errorf("committing transaction: %w", err)
+	}
+
+	return user, nil
 }
