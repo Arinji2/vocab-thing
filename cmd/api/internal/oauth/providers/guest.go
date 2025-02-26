@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"github.com/arinji2/vocab-thing/internal/models/idgen"
-	"github.com/arinji2/vocab-thing/internal/models/sqlite"
+	"github.com/arinji2/vocab-thing/internal/models/sqlite/users"
 )
 
 type Guest struct {
@@ -46,7 +46,7 @@ func (p *Guest) FetchGuestUser() (*AuthUser, error) {
 		}
 
 		guestID := fmt.Sprintf("Guest-%s", randomID)
-		var guestUser sqlite.UserModel
+		var guestUser users.UserModel
 		_, err = guestUser.ByUsername(p.Ctx, guestID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
