@@ -5,13 +5,13 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/arinji2/vocab-thing/db"
+	"github.com/arinji2/vocab-thing/internal/database"
 	"github.com/arinji2/vocab-thing/routes"
 	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
-	db, err := db.SetupDatabase("../../db/app.db")
+	db, err := database.SetupDatabase("../../db/app.db")
 	if err != nil {
 		log.Fatal(err)
 	}
