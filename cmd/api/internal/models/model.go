@@ -1,10 +1,12 @@
 package models
 
-import "time"
+import (
+	"github.com/arinji2/vocab-thing/internal/tools/types"
+)
 
 type User struct {
-	ID        int       `json:"id"`
-	Username  string    `json:"username"`
-	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID        int            `json:"id"`
+	Username  string         `json:"username"`
+	Email     string         `json:"email"`
+	CreatedAt types.DateTime `json:"createdAt"`
 }
