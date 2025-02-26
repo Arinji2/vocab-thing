@@ -2,11 +2,27 @@ package providers
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 
+	"github.com/arinji2/vocab-thing/internal/models"
+	"github.com/arinji2/vocab-thing/internal/utils/idgen"
+	"github.com/gorilla/sessions"
 	"golang.org/x/oauth2"
+)
+
+type ProviderInterface interface {
+	FetchAuthUser(token *oauth2.Token) (*models.AuthUser, error)
+	GenerateCodeURL(r *http.Request, w http.ResponseWriter) (string, error)
+}
+
+var (
+	ValidProviders []string = []string{"google", "github", "discord"}
+	store                   = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
 )
 
 type BaseProvider struct {
@@ -20,6 +36,22 @@ type BaseProvider struct {
 	TokenURL     string
 	UserInfoURL  string
 	Scopes       []string
+}
+
+func (p *BaseProvider) NewProvider(providerType string) ProviderInterface {
+	if p.Ctx == nil {
+		p.Ctx = context.Background()
+	}
+	switch providerType {
+	case "google":
+		return NewGoogleProvider(p.Ctx)
+	case "github":
+		return NewGithubProvider(p.Ctx)
+	case "discord":
+		return NewDiscordProvider(p.Ctx)
+	default:
+		return nil
+	}
 }
 
 func (p *BaseProvider) FetchRawUserInfo(token *oauth2.Token) ([]byte, error) {
@@ -75,4 +107,30 @@ func (p *BaseProvider) oauth2Config() *oauth2.Config {
 			TokenURL: p.TokenURL,
 		},
 	}
+}
+
+func (p *BaseProvider) GenerateCodeURL(r *http.Request, w http.ResponseWriter) (string, error) {
+	stateID, err := idgen.GenerateRandomID(idgen.DefaultIDSize, idgen.URLSafeAlphanumericCharset)
+	if err != nil {
+		return "", fmt.Errorf("error with generating state id: %w", err)
+	}
+
+	codeVerifier, err := idgen.GenerateRandomID(idgen.OauthCodeVerifierSize, idgen.NumberCharset)
+	if err != nil {
+		return "", fmt.Errorf("error with generating code verifier: %w", err)
+	}
+
+	hashedVerifier := sha256.Sum256([]byte(codeVerifier))
+	initalCodeVerifier := base64.RawURLEncoding.EncodeToString(hashedVerifier[:])
+
+	session, err := store.New(r, "oauth-session")
+	if err != nil {
+		return "", fmt.Errorf("error with creating session: %w", err)
+	}
+	session.Values["state"] = stateID
+	session.Values["code_verifier"] = codeVerifier
+	session.Save(r, w)
+
+	codeURL := fmt.Sprintf("%s?code_challenge=%s&code_challenge_method=S256&state=%s", p.AuthURL, initalCodeVerifier, stateID)
+	return codeURL, nil
 }

@@ -12,13 +12,13 @@ import (
 )
 
 type Guest struct {
-	BaseProvider
-	Db *sql.DB
+	Provider BaseProvider
+	Db       *sql.DB
 }
 
-func NewGuestProvider(db *sql.DB) *Google {
-	return &Google{
-		BaseProvider{
+func NewGuestProvider(db *sql.DB) *Guest {
+	return &Guest{
+		Provider: BaseProvider{
 			ProviderType: "guest",
 			Ctx:          context.Background(),
 			AuthURL:      "",
@@ -29,6 +29,7 @@ func NewGuestProvider(db *sql.DB) *Google {
 			ClientSecret: "",
 			RedirectURL:  "",
 		},
+		Db: db,
 	}
 }
 
@@ -48,7 +49,7 @@ func (p *Guest) FetchGuestUser() (*models.AuthUser, error) {
 
 		guestID := fmt.Sprintf("Guest-%s", randomID)
 		var guestUser users.UserModel
-		_, err = guestUser.ByUsername(p.Ctx, guestID)
+		_, err = guestUser.ByUsername(p.Provider.Ctx, guestID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				username = guestID
@@ -66,7 +67,7 @@ func (p *Guest) FetchGuestUser() (*models.AuthUser, error) {
 	}
 
 	user := &models.AuthUser{
-		Type:     p.ProviderType,
+		Type:     p.Provider.ProviderType,
 		Id:       id,
 		Username: username,
 	}

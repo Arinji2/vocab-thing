@@ -14,11 +14,13 @@ type Discord struct {
 	BaseProvider
 }
 
-func NewDiscordProvider() *Discord {
+var _ ProviderInterface = (*Discord)(nil)
+
+func NewDiscordProvider(ctx context.Context) *Discord {
 	return &Discord{
 		BaseProvider{
 			ProviderType: "discord",
-			Ctx:          context.Background(),
+			Ctx:          ctx,
 			AuthURL:      "https://discord.com/oauth2/authorize",
 			TokenURL:     "https://discord.com/api/oauth2/token",
 			UserInfoURL:  "https://discord.com/api/users/@me",

@@ -16,11 +16,13 @@ type Github struct {
 	BaseProvider
 }
 
-func NewGithubProvider() *Github {
+var _ ProviderInterface = (*Github)(nil)
+
+func NewGithubProvider(ctx context.Context) *Github {
 	return &Github{
 		BaseProvider{
 			ProviderType: "github",
-			Ctx:          context.Background(),
+			Ctx:          ctx,
 			AuthURL:      "https://github.com/login/oauth/authorize",
 			TokenURL:     "https://github.com/login/oauth/access_token",
 			UserInfoURL:  "https://api.github.com/user",

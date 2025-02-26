@@ -14,11 +14,13 @@ type Google struct {
 	BaseProvider
 }
 
-func NewGoogleProvider() *Google {
+var _ ProviderInterface = (*Google)(nil)
+
+func NewGoogleProvider(ctx context.Context) *Google {
 	return &Google{
 		BaseProvider{
 			ProviderType: "google",
-			Ctx:          context.Background(),
+			Ctx:          ctx,
 			AuthURL:      "https://accounts.google.com/o/oauth2/v2/auth",
 			TokenURL:     "https://oauth2.googleapis.com/token",
 			UserInfoURL:  "https://www.googleapis.com/oauth2/v3/userinfo",
