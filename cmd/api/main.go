@@ -7,6 +7,7 @@ import (
 
 	"github.com/arinji2/vocab-thing/db"
 	"github.com/arinji2/vocab-thing/routes"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
