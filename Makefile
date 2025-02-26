@@ -19,5 +19,8 @@ db-reset: ## Reset database by dropping all tables and re-migrating
 
 db-delete: ## Delete the database file
 	@rm -f $(DB_FILE)
+	@rm -f $(DB_FILE)-shm
+	@rm -f $(DB_FILE)-wal
+
 	@echo "Database file '$(DB_FILE)' deleted."
 
