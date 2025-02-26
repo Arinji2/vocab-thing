@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/arinji2/vocab-thing/internal/models"
-	"github.com/arinji2/vocab-thing/internal/tools/types"
+	"github.com/arinji2/vocab-thing/internal/utils/datetime"
 )
 
 func (m *UserModel) All(ctx context.Context) ([]models.User, error) {
@@ -35,10 +35,10 @@ func (m *UserModel) All(ctx context.Context) ([]models.User, error) {
 			return nil, fmt.Errorf("scanning user row: %w", err)
 		}
 
-		parsedTime, err := types.ParseDateTime(createdAtStr)
+		parsedTime, err := datetime.ParseDateTime(createdAtStr)
 		if err != nil {
 			fmt.Printf("Warning: could not parse createdAt '%s' for user %d: %v\n", createdAtStr, user.ID, err)
-			user.CreatedAt = types.DateTime{}
+			user.CreatedAt = datetime.DateTime{}
 		} else {
 			user.CreatedAt = parsedTime
 		}
@@ -79,10 +79,10 @@ func (m *UserModel) ByID(ctx context.Context, id string) (models.User, error) {
 		return models.User{}, fmt.Errorf("scanning user row: %w", err)
 	}
 
-	parsedTime, err := types.ParseDateTime(createdAtStr)
+	parsedTime, err := datetime.ParseDateTime(createdAtStr)
 	if err != nil {
 		fmt.Printf("Warning: could not parse createdAt '%s' for user %d: %v\n", createdAtStr, user.ID, err)
-		user.CreatedAt = types.DateTime{}
+		user.CreatedAt = datetime.DateTime{}
 	} else {
 		user.CreatedAt = parsedTime
 	}
@@ -116,10 +116,10 @@ func (m *UserModel) ByUsername(ctx context.Context, username string) (models.Use
 		return models.User{}, fmt.Errorf("scanning user row: %w", err)
 	}
 
-	parsedTime, err := types.ParseDateTime(createdAtStr)
+	parsedTime, err := datetime.ParseDateTime(createdAtStr)
 	if err != nil {
 		fmt.Printf("Warning: could not parse createdAt '%s' for user %d: %v\n", createdAtStr, user.ID, err)
-		user.CreatedAt = types.DateTime{}
+		user.CreatedAt = datetime.DateTime{}
 	} else {
 		user.CreatedAt = parsedTime
 	}
@@ -153,10 +153,10 @@ func (m *UserModel) ByEmail(ctx context.Context, email string) (models.User, err
 		return models.User{}, fmt.Errorf("scanning user row: %w", err)
 	}
 
-	parsedTime, err := types.ParseDateTime(createdAtStr)
+	parsedTime, err := datetime.ParseDateTime(createdAtStr)
 	if err != nil {
 		fmt.Printf("Warning: could not parse createdAt '%s' for user %d: %v\n", createdAtStr, user.ID, err)
-		user.CreatedAt = types.DateTime{}
+		user.CreatedAt = datetime.DateTime{}
 	} else {
 		user.CreatedAt = parsedTime
 	}

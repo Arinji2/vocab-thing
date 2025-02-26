@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/arinji2/vocab-thing/internal/models"
-	"github.com/arinji2/vocab-thing/internal/tools/types"
+	"github.com/arinji2/vocab-thing/internal/utils/datetime"
 )
 
 func (m *UserModel) Create(ctx context.Context, user models.User) error {
@@ -15,7 +15,7 @@ func (m *UserModel) Create(ctx context.Context, user models.User) error {
 	}
 	defer tx.Rollback()
 
-	user.CreatedAt = types.NowDateTime()
+	user.CreatedAt = datetime.NowDateTime()
 	query := `INSERT INTO users (id, username, email, createdAt) VALUES (?, ?, ?, ?)`
 
 	_, err = tx.ExecContext(ctx, query, user.ID, user.Username, user.Email, user.CreatedAt.String())
