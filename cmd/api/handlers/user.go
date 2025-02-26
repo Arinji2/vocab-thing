@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/arinji2/vocab-thing/internal/models/sqlite/users"
+	"github.com/arinji2/vocab-thing/internal/database/users"
 )
 
 type UserHandler struct {
