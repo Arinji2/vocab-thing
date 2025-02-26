@@ -7,7 +7,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/arinji2/vocab-thing/internal/tools/types"
+	"github.com/arinji2/vocab-thing/internal/models"
+	"github.com/arinji2/vocab-thing/internal/utils/datetime"
 	"golang.org/x/oauth2"
 )
 
@@ -33,7 +34,7 @@ func NewGithubProvider() *Github {
 	}
 }
 
-func (p *Github) FetchAuthUser(token *oauth2.Token) (*AuthUser, error) {
+func (p *Github) FetchAuthUser(token *oauth2.Token) (*models.AuthUser, error) {
 	data, err := p.FetchRawUserInfo(token)
 	if err != nil {
 		return nil, err
@@ -55,7 +56,7 @@ func (p *Github) FetchAuthUser(token *oauth2.Token) (*AuthUser, error) {
 		return nil, err
 	}
 
-	user := &AuthUser{
+	user := &models.AuthUser{
 		Type:         p.ProviderType,
 		Id:           strconv.FormatInt(extracted.Id, 10),
 		Username:     extracted.Login,
@@ -64,7 +65,7 @@ func (p *Github) FetchAuthUser(token *oauth2.Token) (*AuthUser, error) {
 		RefreshToken: token.RefreshToken,
 	}
 
-	user.Expiry, _ = types.ParseDateTime(token.Expiry)
+	user.Expiry, _ = datetime.ParseDateTime(token.Expiry)
 
 	// in case user has set "Keep my email address private", send an
 	// **optional** API request to retrieve the verified primary email

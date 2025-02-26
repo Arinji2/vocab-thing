@@ -6,8 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/arinji2/vocab-thing/internal/models/idgen"
-	"github.com/arinji2/vocab-thing/internal/models/sqlite/users"
+	"github.com/arinji2/vocab-thing/internal/database/users"
+	"github.com/arinji2/vocab-thing/internal/models"
+	"github.com/arinji2/vocab-thing/internal/utils/idgen"
 )
 
 type Guest struct {
@@ -32,7 +33,7 @@ func NewGuestProvider(db *sql.DB) *Google {
 }
 
 // FetchAuthUser returns an AuthUser instance for a guest from DB.
-func (p *Guest) FetchGuestUser() (*AuthUser, error) {
+func (p *Guest) FetchGuestUser() (*models.AuthUser, error) {
 	var username string
 	totalRuns := 0
 	for {
@@ -64,7 +65,7 @@ func (p *Guest) FetchGuestUser() (*AuthUser, error) {
 		return nil, err
 	}
 
-	user := &AuthUser{
+	user := &models.AuthUser{
 		Type:     p.ProviderType,
 		Id:       id,
 		Username: username,

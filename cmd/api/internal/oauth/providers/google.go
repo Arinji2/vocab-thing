@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/arinji2/vocab-thing/internal/tools/types"
+	"github.com/arinji2/vocab-thing/internal/models"
+	"github.com/arinji2/vocab-thing/internal/utils/datetime"
 	"golang.org/x/oauth2"
 )
 
@@ -32,7 +33,7 @@ func NewGoogleProvider() *Google {
 }
 
 // FetchAuthUser returns an AuthUser instance based on the Google's user api.
-func (p *Google) FetchAuthUser(token *oauth2.Token) (*AuthUser, error) {
+func (p *Google) FetchAuthUser(token *oauth2.Token) (*models.AuthUser, error) {
 	data, err := p.FetchRawUserInfo(token)
 	if err != nil {
 		return nil, err
@@ -54,7 +55,7 @@ func (p *Google) FetchAuthUser(token *oauth2.Token) (*AuthUser, error) {
 		return nil, err
 	}
 
-	user := &AuthUser{
+	user := &models.AuthUser{
 		Type:         p.ProviderType,
 		Id:           extracted.Id,
 		Username:     extracted.Name,
@@ -62,7 +63,7 @@ func (p *Google) FetchAuthUser(token *oauth2.Token) (*AuthUser, error) {
 		RefreshToken: token.RefreshToken,
 	}
 
-	user.Expiry, _ = types.ParseDateTime(token.Expiry)
+	user.Expiry, _ = datetime.ParseDateTime(token.Expiry)
 
 	if extracted.EmailVerified {
 		user.Email = extracted.Email

@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/arinji2/vocab-thing/internal/tools/types"
+	"github.com/arinji2/vocab-thing/internal/models"
+	"github.com/arinji2/vocab-thing/internal/utils/datetime"
 	"golang.org/x/oauth2"
 )
 
@@ -33,7 +34,7 @@ func NewDiscordProvider() *Discord {
 }
 
 // FetchAuthUser returns an AuthUser instance based on the Discord's user api.
-func (p *Discord) FetchAuthUser(token *oauth2.Token) (*AuthUser, error) {
+func (p *Discord) FetchAuthUser(token *oauth2.Token) (*models.AuthUser, error) {
 	data, err := p.FetchRawUserInfo(token)
 	if err != nil {
 		return nil, err
@@ -56,14 +57,14 @@ func (p *Discord) FetchAuthUser(token *oauth2.Token) (*AuthUser, error) {
 		return nil, err
 	}
 
-	user := &AuthUser{
+	user := &models.AuthUser{
 		Id:           extracted.Id,
 		Username:     extracted.Username,
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
 	}
 
-	user.Expiry, _ = types.ParseDateTime(token.Expiry)
+	user.Expiry, _ = datetime.ParseDateTime(token.Expiry)
 
 	if extracted.Verified {
 		user.Email = extracted.Email
