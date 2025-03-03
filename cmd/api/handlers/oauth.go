@@ -36,8 +36,9 @@ func (h *UserHandler) GenerateCodeURL(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		w.Write([]byte(codeURL))
+
 		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(codeURL))
 		return
 	}
 }
