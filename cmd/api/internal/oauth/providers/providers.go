@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 
 	"github.com/arinji2/vocab-thing/internal/models"
 	"github.com/arinji2/vocab-thing/internal/utils/idgen"
@@ -131,6 +133,18 @@ func (p *BaseProvider) GenerateCodeURL(r *http.Request, w http.ResponseWriter) (
 	session.Values["code_verifier"] = codeVerifier
 	session.Save(r, w)
 
-	codeURL := fmt.Sprintf("%s?code_challenge=%s&code_challenge_method=S256&state=%s", p.AuthURL, initalCodeVerifier, stateID)
+	var scope strings.Builder
+	for _, s := range p.Scopes {
+		scope.WriteString(s)
+		scope.WriteString(" ")
+	}
+	scopeStr := strings.TrimSpace(scope.String())
+	encodedScope := url.QueryEscape(scopeStr)
+
+	codeURL := fmt.Sprintf(
+		"%s?client_id=%s&redirect_uri=%s&code_challenge=%s&code_challenge_method=S256&state=%s&response_type=code&access_type=offline&scope=%s",
+		p.AuthURL, p.ClientId, p.RedirectURL, initalCodeVerifier, stateID, encodedScope,
+	)
+
 	return codeURL, nil
 }
