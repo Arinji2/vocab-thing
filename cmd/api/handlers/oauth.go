@@ -9,7 +9,7 @@ import (
 	"github.com/arinji2/vocab-thing/internal/oauth/providers"
 )
 
-type generateCodeURL struct {
+type generateCodeURLRequest struct {
 	ProviderType string `json:"providerType"`
 }
 
@@ -17,7 +17,7 @@ func (h *UserHandler) GenerateCodeURL(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	var data generateCodeURL
+	var data generateCodeURLRequest
 	err := parseRequestBody(r, &data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
