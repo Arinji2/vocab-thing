@@ -1,4 +1,4 @@
-package providers
+package oauth
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/arinji2/vocab-thing/internal/database/users"
+	"github.com/arinji2/vocab-thing/internal/database"
 	"github.com/arinji2/vocab-thing/internal/models"
 	"github.com/arinji2/vocab-thing/internal/utils/idgen"
 )
@@ -21,20 +21,13 @@ func NewGuestProvider(db *sql.DB) *Guest {
 		Provider: BaseProvider{
 			ProviderType: "guest",
 			Ctx:          context.Background(),
-			AuthURL:      "",
-			TokenURL:     "",
-			UserInfoURL:  "",
-			Scopes:       []string{},
-			ClientId:     "",
-			ClientSecret: "",
-			RedirectURL:  "",
 		},
 		Db: db,
 	}
 }
 
 // FetchAuthUser returns an AuthUser instance for a guest from DB.
-func (p *Guest) FetchGuestUser() (*models.AuthUser, error) {
+func (p *Guest) FetchGuestUser() (*models.User, error) {
 	var username string
 	totalRuns := 0
 	for {
@@ -42,14 +35,11 @@ func (p *Guest) FetchGuestUser() (*models.AuthUser, error) {
 			return nil, fmt.Errorf("exceeding 5 total runs for generating guestID")
 		}
 		totalRuns++
-		randomID, err := idgen.GenerateRandomID(6, idgen.NumberCharset)
-		if err != nil {
-			return nil, fmt.Errorf("error with generating guest id: %w", err)
-		}
+		randomID := idgen.GenerateRandomID(6, idgen.NumberCharset)
 
 		guestID := fmt.Sprintf("Guest-%s", randomID)
-		var guestUser users.UserModel
-		_, err = guestUser.ByUsername(p.Provider.Ctx, guestID)
+		var guestUser database.UserModel
+		_, err := guestUser.ByUsername(p.Provider.Ctx, guestID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				username = guestID
@@ -61,14 +51,7 @@ func (p *Guest) FetchGuestUser() (*models.AuthUser, error) {
 
 	}
 
-	id, err := idgen.GenerateRandomID(idgen.DefaultIDSize, idgen.URLSafeAlphanumericCharset)
-	if err != nil {
-		return nil, err
-	}
-
-	user := &models.AuthUser{
-		Type:     p.Provider.ProviderType,
-		Id:       id,
+	user := &models.User{
 		Username: username,
 	}
 
