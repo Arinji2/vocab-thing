@@ -74,6 +74,31 @@ func (m *UserModel) ByID(ctx context.Context, id string) (models.User, error) {
 	return user, nil
 }
 
+func (m *UserModel) ByUsername(ctx context.Context, username string) (models.User, error) {
+	query := `SELECT id, username, email, createdAt FROM users WHERE username = ?`
+
+	row := m.DB.QueryRowContext(ctx, query, username)
+
+	var user models.User
+	var createdAtStr string
+
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &createdAtStr)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return models.User{}, fmt.Errorf("user not found with username %s: %w", username, err)
+		}
+		return models.User{}, fmt.Errorf("scanning user row: %w", err)
+	}
+
+	parsedTime, err := utils.StringToTime(createdAtStr, fmt.Sprintf("Warning: could not parse createdAt '%s' for user %s", createdAtStr, user.ID))
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	user.CreatedAt = parsedTime
+
+	return user, nil
+}
+
 func (m *UserModel) ByEmail(ctx context.Context, email string) (models.User, error) {
 	query := `SELECT id, username, email, createdAt FROM users WHERE email = ?`
 
