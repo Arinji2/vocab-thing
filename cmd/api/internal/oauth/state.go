@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/arinji2/vocab-thing/internal/utils/idgen"
 )
@@ -19,6 +20,7 @@ func GenerateState(r *http.Request, w http.ResponseWriter) string {
 		HttpOnly: true,
 		Secure:   os.Getenv("ENVIRONMENT") == "production",
 		SameSite: http.SameSiteLaxMode,
+		MaxAge:   SessionExpiry(time.Now()).UTC().Second(),
 	})
 
 	return state

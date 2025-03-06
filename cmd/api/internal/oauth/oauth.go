@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/arinji2/vocab-thing/internal/models"
-	"github.com/davecgh/go-spew/spew"
 	"golang.org/x/oauth2"
 )
 
@@ -53,7 +52,6 @@ func (p *BaseProvider) AuthenticateWithCode(r *http.Request, code, state string)
 	if err != nil {
 		return nil, fmt.Errorf("error exchanging token: %w", err)
 	}
-	spew.Dump(token)
 	return &models.OauthProvider{
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
@@ -84,4 +82,8 @@ func (p *BaseProvider) RefreshAccessToken(o *models.OauthProvider) error {
 	o.ExpiresIn = newToken.Expiry
 
 	return nil
+}
+
+func SessionExpiry(t time.Time) time.Time {
+	return t.Add(time.Hour * 24 * 7) // 7 days
 }
