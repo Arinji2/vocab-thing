@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/arinji2/vocab-thing/internal/models"
+	"github.com/davecgh/go-spew/spew"
 	"golang.org/x/oauth2"
 )
 
@@ -41,19 +42,18 @@ func NewProvider(ctx context.Context, providerType string) (ProviderInterface, e
 
 func (p *BaseProvider) GenerateCodeURL(r *http.Request, w http.ResponseWriter) (string, error) {
 	state := GenerateState(r, w)
-	return p.Config.AuthCodeURL(state, oauth2.AccessTypeOffline), nil
+	return p.Config.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.ApprovalForce), nil
 }
 
 func (p *BaseProvider) AuthenticateWithCode(r *http.Request, code, state string) (*models.OauthProvider, error) {
 	if !ValidateState(r, state) {
 		return nil, fmt.Errorf("invalid oauth state")
 	}
-
 	token, err := p.Config.Exchange(p.Ctx, code)
 	if err != nil {
 		return nil, fmt.Errorf("error exchanging token: %w", err)
 	}
-
+	spew.Dump(token)
 	return &models.OauthProvider{
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,

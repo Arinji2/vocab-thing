@@ -15,4 +15,5 @@ func RegisterRoutes(db *sql.DB) http.Handler {
 	mux.HandleFunc("POST /user/create", userHandler.CreateUser)
 	mux.HandleFunc("POST /oauth/generate-code-url", userHandler.GenerateCodeURL)
 	return mux
+	mux.HandleFunc("POST /oauth/callback", userHandler.CallbackHandler)
 }

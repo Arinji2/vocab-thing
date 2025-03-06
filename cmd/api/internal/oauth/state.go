@@ -1,6 +1,7 @@
 package oauth
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 
@@ -17,7 +18,7 @@ func GenerateState(r *http.Request, w http.ResponseWriter) string {
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   os.Getenv("ENVIRONMENT") == "production",
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	return state
@@ -26,6 +27,7 @@ func GenerateState(r *http.Request, w http.ResponseWriter) string {
 // ValidateState checks if the state from the request matches the stored state
 func ValidateState(r *http.Request, state string) bool {
 	cookie, err := r.Cookie("oauth_state")
+	fmt.Println(cookie)
 	if err != nil {
 		return false
 	}
