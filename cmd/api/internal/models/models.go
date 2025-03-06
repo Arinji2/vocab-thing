@@ -23,6 +23,7 @@ type OauthProvider struct {
 type Session struct {
 	ID          string    `json:"id"`
 	UserID      string    `json:"user_id"`
+	ProviderID  string    `json:"provider_id"`
 	CreatedAt   time.Time `json:"created_at"`
 	Fingerprint string    `json:"fingerprint"`
 	IP          string    `json:"ip"`
