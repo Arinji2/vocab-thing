@@ -25,9 +25,10 @@ func (h *UserHandler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, user := range users {
-		w.Write([]byte(user.Username))
+		writeJSON(w, http.StatusOK, user)
 	}
 }
+
 type createUserRequest struct {
 	Email    string `json:"email"`
 	Username string `json:"username"`
