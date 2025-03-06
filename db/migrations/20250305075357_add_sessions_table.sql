@@ -1,9 +1,9 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE sessions (
-  id VARCHAR(255) PRIMARY KEY,
-  userId VARCHAR(255) NOT NULL,
-  providerId VARCHAR(255) NOT NULL,
+  id INTEGER PRIMARY KEY,
+  userId VARCHAR(255) PRIMARY KEY,
+  providerId TEXT PRIMARY KEY,
   fingerprint VARCHAR(255) NOT NULL,
   ip VARCHAR(255) NOT NULL,
   expiresAt DATETIME NOT NULL,

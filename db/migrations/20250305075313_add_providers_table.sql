@@ -1,8 +1,8 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE providers (
-  id INTEGER PRIMARY KEY,
-  userId INTEGER NOT NULL,
+  id TEXT PRIMARY KEY,
+  userId TEXT PRIMARY KEY,
   type VARCHAR(255) NOT NULL,
   refreshToken VARCHAR(255) NOT NULL,
   accessToken VARCHAR(255) NOT NULL,
