@@ -89,8 +89,8 @@ func (p *Github) FetchAuthUser(o *models.OauthProvider) (*models.User, error) {
 		Email:    extracted.Email,
 	}
 
-	if o.ProviderUserID == "" {
-		o.ProviderUserID = fmt.Sprintf("%d", extracted.ID)
+	if o.UserID == "" {
+		o.UserID = fmt.Sprintf("%d", extracted.ID)
 	}
 
 	return user, nil

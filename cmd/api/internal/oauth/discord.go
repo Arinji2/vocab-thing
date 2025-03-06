@@ -77,8 +77,8 @@ func (p *Discord) FetchAuthUser(o *models.OauthProvider) (*models.User, error) {
 		Email:    extracted.Email,
 	}
 
-	if o.ProviderUserID == "" {
-		o.ProviderUserID = extracted.Id
+	if o.UserID == "" {
+		o.UserID = extracted.Id
 	}
 
 	return user, nil

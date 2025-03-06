@@ -79,8 +79,8 @@ func (p *Google) FetchAuthUser(o *models.OauthProvider) (*models.User, error) {
 		Email:    extracted.Email,
 	}
 
-	if o.ProviderUserID == "" {
-		o.ProviderUserID = extracted.Sub
+	if o.UserID == "" {
+		o.UserID = extracted.Sub
 	}
 
 	return user, nil

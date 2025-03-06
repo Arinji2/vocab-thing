@@ -55,7 +55,7 @@ func (p *BaseProvider) AuthenticateWithCode(r *http.Request, code, state string)
 	return &models.OauthProvider{
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
-		ExpiresIn:    token.Expiry,
+		ExpiresAt:    token.Expiry,
 	}, nil
 }
 
@@ -63,7 +63,7 @@ func (p *BaseProvider) RefreshAccessToken(o *models.OauthProvider) error {
 	existingToken := &oauth2.Token{
 		AccessToken:  o.AccessToken,
 		RefreshToken: o.RefreshToken,
-		Expiry:       o.ExpiresIn,
+		Expiry:       o.ExpiresAt,
 	}
 
 	// Check if the token is expired or about to expire (within 5 minutes)
@@ -79,7 +79,7 @@ func (p *BaseProvider) RefreshAccessToken(o *models.OauthProvider) error {
 
 	o.AccessToken = newToken.AccessToken
 	o.RefreshToken = newToken.RefreshToken
-	o.ExpiresIn = newToken.Expiry
+	o.ExpiresAt = newToken.Expiry
 
 	return nil
 }
