@@ -124,7 +124,7 @@ func (m *UserModel) ByEmail(ctx context.Context, email string) (models.User, err
 	return user, nil
 }
 
-func (m *UserModel) Create(ctx context.Context, user models.User) error {
+func (m *UserModel) Create(ctx context.Context, user *models.User) error {
 	tx, err := m.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("starting transaction: %w", err)
@@ -133,11 +133,11 @@ func (m *UserModel) Create(ctx context.Context, user models.User) error {
 
 	user.CreatedAt = time.Now().UTC()
 	query := `INSERT INTO users (id, username, email, createdAt) 
-          VALUES (lower(hex(randomblob(16))), ?, ?, ?)`
+          VALUES (lower(hex(randomblob(16))), ?, ?, ?) RETURNING id`
 
-	_, err = tx.ExecContext(ctx, query, user.Username, user.Email, user.CreatedAt.Format(time.RFC3339))
+	err = tx.QueryRowContext(ctx, query, user.Username, user.Email, user.CreatedAt.Format(time.RFC3339)).Scan(&user.ID)
 	if err != nil {
-		return fmt.Errorf("error with user creation of username %s, userID %s: %w", user.Username, user.ID, err)
+		return fmt.Errorf("error with user creation of username %s: %w", user.Username, err)
 	}
 
 	if err := tx.Commit(); err != nil {

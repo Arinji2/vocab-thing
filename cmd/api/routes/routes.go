@@ -12,6 +12,7 @@ func RegisterRoutes(db *sql.DB) http.Handler {
 	userHandler := handlers.UserHandler{Handler: handler}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /", userHandler.GetAllUsers)
+	mux.HandleFunc("POST /user/create", userHandler.CreateUser)
 	mux.HandleFunc("POST /oauth/generate-code-url", userHandler.GenerateCodeURL)
 	return mux
 }
