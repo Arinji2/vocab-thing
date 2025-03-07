@@ -20,11 +20,11 @@ type OauthProvider struct {
 }
 
 type Session struct {
-	ID          string    `json:"id"`
-	UserID      string    `json:"user_id"`
-	ProviderID  string    `json:"provider_id"`
-	CreatedAt   time.Time `json:"created_at"`
-	Fingerprint string    `json:"fingerprint"`
-	IP          string    `json:"ip"`
-	ExpiresAt   time.Time `json:"expires_at"`
+	ID          string    `json:"id" sql:"id"`
+	UserID      string    `json:"user_id" sql:"userId"`
+	ProviderID  string    `json:"provider_id" sql:"providerId"`
+	Fingerprint string    `json:"fingerprint" sql:"fingerprint"`
+	IP          string    `json:"ip" sql:"ip"`
+	ExpiresAt   time.Time `json:"expires_at" sql:"expiresAt"`
+	CreatedAt   time.Time `json:"created_at" sql:"createdAt"`
 }
