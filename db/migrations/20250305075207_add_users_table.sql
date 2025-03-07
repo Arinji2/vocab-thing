@@ -4,7 +4,7 @@ CREATE TABLE users (
   id TEXT PRIMARY KEY,
   username VARCHAR(255) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
-  createdAt DATETIME NOT NULL
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- +goose StatementEnd
