@@ -137,17 +137,36 @@ func (h *UserHandler) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sessionModel := database.SessionModel{DB: h.DB}
-	userSession := models.Session{
-		UserID:      user.ID,
-		ProviderID:  selectedUserProvider.ID,
-		Fingerprint: data.Fingerprint,
-		IP:          data.IP,
-		ExpiresAt:   oauth.SessionExpiry(time.Now()),
-	}
-	err = sessionModel.Create(ctx, &userSession)
+	var userSession models.Session
+	existingSessions, err := sessionModel.ByUserIDWithProvider(ctx, user.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	for _, session := range existingSessions {
+		if session.ProviderType == nil {
+			continue
+		}
+		if *session.ProviderType == selectedUserProvider.Type && session.Fingerprint == data.Fingerprint && session.IP == data.IP && session.ExpiresAt.After(time.Now().Add(time.Hour*24)) {
+			userSession = session
+			break
+		}
+	}
+
+	if userSession.ID == "" {
+		userSession = models.Session{
+			UserID:      user.ID,
+			ProviderID:  selectedUserProvider.ID,
+			Fingerprint: data.Fingerprint,
+			IP:          data.IP,
+			ExpiresAt:   oauth.SessionExpiry(time.Now()),
+		}
+		err = sessionModel.Create(ctx, &userSession)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	response := callbackHandlerResponse{
