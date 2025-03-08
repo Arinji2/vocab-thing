@@ -143,7 +143,7 @@ func (h *UserHandler) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	sessionModel := database.SessionModel{DB: h.DB}
 	var userSession models.Session
 	existingSessions, err := sessionModel.ByUserIDWithProvider(ctx, user.ID)
-	if err != nil {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
