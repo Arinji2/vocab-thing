@@ -11,7 +11,6 @@ import (
 func SetupDatabase(dbPath string) (*sql.DB, error) {
 	fmt.Println("Setting up database")
 	connURL := fmt.Sprintf("file:%s?_foreign_keys=1&_journal_mode=WAL", dbPath)
-	fmt.Println(connURL)
 	db, err := sql.Open("sqlite3", connURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)

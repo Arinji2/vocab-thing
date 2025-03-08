@@ -79,9 +79,6 @@ func (p *BaseProvider) AuthenticateWithCode(r *http.Request, code string, state 
 		return nil, err
 	}
 
-	fmt.Println("STATE: ", state)
-	fmt.Println("CODE: ", code)
-
 	if sessionState != state {
 		return nil, fmt.Errorf("invalid oauth state")
 	}

@@ -15,7 +15,6 @@ type SessionModel struct {
 }
 
 func (m *SessionModel) Create(ctx context.Context, session *models.Session) error {
-	fmt.Println("Creating session")
 	tx, err := m.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("starting transaction: %w", err)
