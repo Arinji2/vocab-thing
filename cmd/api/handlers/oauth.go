@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"time"
 
+	"github.com/arinji2/vocab-thing/internal/database"
+	"github.com/arinji2/vocab-thing/internal/models"
 	"github.com/arinji2/vocab-thing/internal/oauth"
-	"github.com/davecgh/go-spew/spew"
 )
 
 type generateCodeURLRequest struct {
@@ -45,6 +47,11 @@ type callbackHandlerRequest struct {
 	ProviderType string `json:"providerType"`
 	Code         string `json:"code"`
 	State        string `json:"state"`
+	Fingerprint  string `json:"fingerprint"`
+	IP           string `json:"ip"`
+}
+type callbackHandlerResponse struct {
+	SessionID string `json:"sessionID"`
 }
 
 func (h *UserHandler) CallbackHandler(w http.ResponseWriter, r *http.Request) {
@@ -75,8 +82,76 @@ func (h *UserHandler) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	spew.Dump(user)
+	userModel := database.UserModel{DB: h.DB}
+	dbUser, err := userModel.ByEmail(ctx, user.Email)
+	if err != nil {
+		err = userModel.Create(ctx, user)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		user = &dbUser
+	}
 
-	w.WriteHeader(http.StatusOK)
-	writeJSON(w, http.StatusOK, p)
+	providerModel := database.ProviderModel{DB: h.DB}
+	selectedUserProvider := models.OauthProvider{}
+
+	userProviders, err := providerModel.ByUserID(ctx, user.ID)
+	if err != nil {
+		selectedUserProvider = models.OauthProvider{
+			UserID:       user.ID,
+			Type:         p.Type,
+			AccessToken:  p.AccessToken,
+			RefreshToken: p.RefreshToken,
+			ExpiresAt:    p.ExpiresAt,
+		}
+		err = providerModel.Create(ctx, &selectedUserProvider)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		providerExists := slices.ContainsFunc(userProviders, func(provider models.OauthProvider) bool {
+			if provider.Type == p.Type {
+				selectedUserProvider = provider
+				return true
+			}
+			return false
+		})
+
+		if !providerExists {
+			selectedUserProvider = models.OauthProvider{
+				UserID:       user.ID,
+				Type:         p.Type,
+				AccessToken:  p.AccessToken,
+				RefreshToken: p.RefreshToken,
+				ExpiresAt:    p.ExpiresAt,
+			}
+			err = providerModel.Create(ctx, &selectedUserProvider)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+	}
+
+	sessionModel := database.SessionModel{DB: h.DB}
+	userSession := models.Session{
+		UserID:      user.ID,
+		ProviderID:  selectedUserProvider.ID,
+		Fingerprint: data.Fingerprint,
+		IP:          data.IP,
+		ExpiresAt:   oauth.SessionExpiry(time.Now()),
+	}
+	err = sessionModel.Create(ctx, &userSession)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := callbackHandlerResponse{
+		SessionID: userSession.ID,
+	}
+	writeJSON(w, http.StatusOK, response)
 }
