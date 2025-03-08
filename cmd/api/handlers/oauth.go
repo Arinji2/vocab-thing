@@ -85,7 +85,9 @@ func (h *UserHandler) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	userModel := database.UserModel{DB: h.DB}
 	dbUser, err := userModel.ByEmail(ctx, user.Email)
 	if err != nil {
-		err = userModel.Create(ctx, user)
+		if errors.Is(err, sql.ErrNoRows) {
+			err = userModel.Create(ctx, user)
+		}
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -99,17 +101,19 @@ func (h *UserHandler) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	userProviders, err := providerModel.ByUserID(ctx, user.ID)
 	if err != nil {
-		selectedUserProvider = models.OauthProvider{
-			UserID:       user.ID,
-			Type:         p.Type,
-			AccessToken:  p.AccessToken,
-			RefreshToken: p.RefreshToken,
-			ExpiresAt:    p.ExpiresAt,
-		}
-		err = providerModel.Create(ctx, &selectedUserProvider)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+		if errors.Is(err, sql.ErrNoRows) {
+			selectedUserProvider = models.OauthProvider{
+				UserID:       user.ID,
+				Type:         p.Type,
+				AccessToken:  p.AccessToken,
+				RefreshToken: p.RefreshToken,
+				ExpiresAt:    p.ExpiresAt,
+			}
+			err = providerModel.Create(ctx, &selectedUserProvider)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
 	} else {
 		providerExists := slices.ContainsFunc(userProviders, func(provider models.OauthProvider) bool {

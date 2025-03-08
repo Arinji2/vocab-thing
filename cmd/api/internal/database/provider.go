@@ -73,7 +73,7 @@ func (p *ProviderModel) ByUserID(ctx context.Context, id string) ([]models.Oauth
 	}
 
 	if len(providers) == 0 {
-		return nil, fmt.Errorf("no providers found for userID %s", id)
+		return nil, fmt.Errorf("no providers found for userID %s: %w", id, sql.ErrNoRows)
 	}
 
 	return providers, nil
