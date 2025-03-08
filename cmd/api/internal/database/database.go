@@ -10,7 +10,9 @@ import (
 
 func SetupDatabase(dbPath string) (*sql.DB, error) {
 	fmt.Println("Setting up database")
-	db, err := sql.Open("sqlite3", dbPath)
+	connURL := fmt.Sprintf("file:%s?_foreign_keys=1&_journal_mode=WAL", dbPath)
+	fmt.Println(connURL)
+	db, err := sql.Open("sqlite3", connURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
@@ -20,12 +22,6 @@ func SetupDatabase(dbPath string) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	_, err = db.Exec("PRAGMA journal_mode=WAL;")
-	if err != nil {
-		db.Close()
-		return nil, fmt.Errorf("failed to set WAL mode: %w", err)
-	}
-
-	log.Println("SQLite database successfully opened in WAL mode.")
+	log.Println("SQLite database successfully opened")
 	return db, nil
 }
