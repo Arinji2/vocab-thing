@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
+	"os"
 	"time"
 
 	"github.com/arinji2/vocab-thing/internal/models"
+	"github.com/gorilla/sessions"
 	"golang.org/x/oauth2"
 )
 
@@ -24,7 +27,10 @@ type BaseProvider struct {
 	UserInfoURL  string
 }
 
-var ValidProviders []string = []string{"google", "github", "discord"}
+var (
+	sessionStore            = sessions.NewCookieStore([]byte(os.Getenv("SESSION_SECRET")))
+	ValidProviders []string = []string{"google", "github", "discord"}
+)
 
 func NewProvider(ctx context.Context, providerType string) (ProviderInterface, error) {
 	switch providerType {
@@ -41,11 +47,42 @@ func NewProvider(ctx context.Context, providerType string) (ProviderInterface, e
 
 func (p *BaseProvider) GenerateCodeURL(r *http.Request, w http.ResponseWriter) (string, error) {
 	state := GenerateState(r, w)
+	session, err := sessionStore.Get(r, "oauth_session")
+	if err != nil {
+		return "", err
+	}
+	session.Values["oauth_state"] = state
+	err = session.Save(r, w)
+	if err != nil {
+		return "", err
+	}
 	return p.Config.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.ApprovalForce), nil
 }
 
-func (p *BaseProvider) AuthenticateWithCode(r *http.Request, code, state string) (*models.OauthProvider, error) {
-	if !ValidateState(r, state) {
+func (p *BaseProvider) AuthenticateWithCode(r *http.Request, code string, state string) (*models.OauthProvider, error) {
+	session, err := sessionStore.Get(r, "oauth_session")
+	if err != nil {
+		return nil, err
+	}
+	val := session.Values["oauth_state"]
+	sessionState, ok := val.(string)
+	if !ok {
+		return nil, fmt.Errorf("invalid oauth session state")
+	}
+	state, err = url.QueryUnescape(state)
+	if err != nil {
+		return nil, err
+	}
+
+	code, err = url.QueryUnescape(code)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("STATE: ", state)
+	fmt.Println("CODE: ", code)
+
+	if sessionState != state {
 		return nil, fmt.Errorf("invalid oauth state")
 	}
 	token, err := p.Config.Exchange(p.Ctx, code)
@@ -53,6 +90,7 @@ func (p *BaseProvider) AuthenticateWithCode(r *http.Request, code, state string)
 		return nil, fmt.Errorf("error exchanging token: %w", err)
 	}
 	return &models.OauthProvider{
+		Type:         p.ProviderType,
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
 		ExpiresAt:    token.Expiry,
