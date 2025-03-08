@@ -98,6 +98,9 @@ func (p *BaseProvider) AuthenticateWithCode(r *http.Request, code string, state 
 }
 
 func (p *BaseProvider) RefreshAccessToken(o *models.OauthProvider) error {
+	if p.ProviderType == "github" {
+		return nil
+	}
 	existingToken := &oauth2.Token{
 		AccessToken:  o.AccessToken,
 		RefreshToken: o.RefreshToken,
