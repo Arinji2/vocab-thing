@@ -1,7 +1,6 @@
 package oauth
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -24,14 +23,4 @@ func GenerateState(r *http.Request, w http.ResponseWriter) string {
 	})
 
 	return state
-}
-
-// ValidateState checks if the state from the request matches the stored state
-func ValidateState(r *http.Request, state string) bool {
-	cookie, err := r.Cookie("oauth_state")
-	fmt.Println(cookie)
-	if err != nil {
-		return false
-	}
-	return cookie.Value == state
 }
