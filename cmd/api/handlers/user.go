@@ -6,8 +6,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/arinji2/vocab-thing/internal/auth"
 	"github.com/arinji2/vocab-thing/internal/database"
 	"github.com/arinji2/vocab-thing/internal/models"
+	"github.com/arinji2/vocab-thing/internal/oauth"
+	"github.com/davecgh/go-spew/spew"
 )
 
 type UserHandler struct {
@@ -56,4 +59,56 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	writeJSON(w, http.StatusOK, userData)
+}
+
+func (h *UserHandler) CreateGuestUser(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	provider := oauth.NewGuestProvider(h.DB)
+
+	user, err := provider.FetchGuestUser()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	spew.Dump(user)
+	userModel := database.UserModel{DB: h.DB}
+	err = userModel.Create(ctx, user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	providerModel := database.ProviderModel{DB: h.DB}
+
+	userProvider := models.OauthProvider{
+		UserID:       user.ID,
+		Type:         "guest",
+		AccessToken:  "",
+		RefreshToken: "",
+		ExpiresAt:    time.Time{},
+	}
+	err = providerModel.Create(ctx, &userProvider)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	sessionModel := database.SessionModel{DB: h.DB}
+
+	userSession := models.Session{
+		UserID:      user.ID,
+		ProviderID:  userProvider.ID,
+		Fingerprint: "",
+		IP:          "",
+		ExpiresAt:   time.Now().Add(365 * 24 * time.Hour), // 1 year
+	}
+	err = sessionModel.Create(ctx, &userSession)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	auth.CreateUserSessionCookie(w, userSession.ID, userSession.ExpiresAt)
+	w.WriteHeader(http.StatusOK)
 }
