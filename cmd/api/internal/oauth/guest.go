@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/arinji2/vocab-thing/internal/database"
 	"github.com/arinji2/vocab-thing/internal/models"
@@ -36,9 +37,11 @@ func (p *Guest) FetchGuestUser() (*models.User, error) {
 		}
 		totalRuns++
 		randomID := idgen.GenerateRandomID(6, idgen.NumberCharset)
-
 		guestID := fmt.Sprintf("Guest-%s", randomID)
+
 		var guestUser database.UserModel
+		guestUser.DB = p.Db
+
 		_, err := guestUser.ByUsername(p.Provider.Ctx, guestID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -53,6 +56,7 @@ func (p *Guest) FetchGuestUser() (*models.User, error) {
 
 	user := &models.User{
 		Username: username,
+		Email:    fmt.Sprintf("%s@example.com", strings.ToLower(username)),
 	}
 
 	return user, nil
