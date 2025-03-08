@@ -2,12 +2,15 @@ package handlers
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"slices"
 	"time"
 
+	"github.com/arinji2/vocab-thing/internal/auth"
 	"github.com/arinji2/vocab-thing/internal/database"
 	"github.com/arinji2/vocab-thing/internal/models"
 	"github.com/arinji2/vocab-thing/internal/oauth"
@@ -63,7 +66,6 @@ func (h *UserHandler) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-
 	provider, err := oauth.NewProvider(ctx, data.ProviderType)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -82,6 +84,7 @@ func (h *UserHandler) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
 	userModel := database.UserModel{DB: h.DB}
 	dbUser, err := userModel.ByEmail(ctx, user.Email)
 	if err != nil {
@@ -95,7 +98,6 @@ func (h *UserHandler) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		user = &dbUser
 	}
-
 	providerModel := database.ProviderModel{DB: h.DB}
 	selectedUserProvider := models.OauthProvider{}
 
@@ -157,7 +159,6 @@ func (h *UserHandler) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
-
 	if userSession.ID == "" {
 		userSession = models.Session{
 			UserID:      user.ID,
@@ -172,9 +173,6 @@ func (h *UserHandler) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-
-	response := callbackHandlerResponse{
-		SessionID: userSession.ID,
-	}
-	writeJSON(w, http.StatusOK, response)
+	auth.CreateUserSessionCookie(w, userSession.ID, userSession.ExpiresAt)
+	w.WriteHeader(http.StatusOK)
 }
