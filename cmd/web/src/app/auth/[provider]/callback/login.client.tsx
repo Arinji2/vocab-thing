@@ -26,25 +26,20 @@ export function LoginClient({
       credentials: "include",
     });
     if (!response.ok) throw new Error(response.statusText);
-    return response.json();
   };
 
-  const { data, error, isLoading } = useQuery({
+  const { error, isLoading } = useQuery({
     queryKey: ["oauth", provider, code],
     queryFn: sendOAuthCallback,
     enabled: !!code,
+    retry: false,
   });
 
   return (
     <div>
       {isLoading && <p>Authenticating...</p>}
       {error && <p>Error: {error.message}</p>}
-      {data && (
-        <div>
-          <h3>OAuth Data:</h3>
-          <pre>{JSON.stringify(data, null, 2)}</pre>
-        </div>
-      )}
+      {!isLoading && !error && <p>Authenticated!</p>}
     </div>
   );
 }
