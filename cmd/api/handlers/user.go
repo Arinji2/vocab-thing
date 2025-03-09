@@ -112,3 +112,27 @@ func (h *UserHandler) CreateGuestUser(w http.ResponseWriter, r *http.Request) {
 	auth.CreateUserSessionCookie(w, userSession.ID, userSession.ExpiresAt)
 	w.WriteHeader(http.StatusOK)
 }
+
+func (h *UserHandler) AuthenticatedRoute(w http.ResponseWriter, r *http.Request) {
+	ctx, err := authenticatedRoute(r, h.DB)
+	if err != nil {
+		if err == auth.ErrSessionExpired {
+			auth.DeleteUserSessionCookie(w)
+		}
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+	userSession, ok := auth.SessionFromContext(ctx)
+	if !ok {
+		http.Error(w, "no session found", http.StatusInternalServerError)
+		return
+	}
+
+	userModel := database.UserModel{DB: h.DB}
+	user, err := userModel.ByID(ctx, userSession.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, user)
+}

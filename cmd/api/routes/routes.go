@@ -18,6 +18,7 @@ func RegisterRoutes(db *sql.DB) http.Handler {
 	mux.HandleFunc("POST /oauth/generate-code-url", userHandler.GenerateCodeURL)
 	mux.HandleFunc("POST /oauth/callback", userHandler.CallbackHandler)
 	mux.HandleFunc("POST /user/create/guest", userHandler.CreateGuestUser)
+	mux.HandleFunc("GET /user/authenticated", userHandler.AuthenticatedRoute)
 	return corsMiddleware(mux)
 }
 

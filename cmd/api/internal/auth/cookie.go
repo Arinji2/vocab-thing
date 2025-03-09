@@ -21,3 +21,24 @@ func CreateUserSessionCookie(w http.ResponseWriter, sessionID string, expiresAt 
 		Expires:  expiresAt.UTC(),
 	})
 }
+
+func DeleteUserSessionCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   -1,
+		Expires:  time.Now().UTC(),
+	})
+}
+
+func GetUserSession(r *http.Request) (string, error) {
+	cookie, err := r.Cookie("session")
+	if err != nil {
+		return "", err
+	}
+	return cookie.Value, nil
+}

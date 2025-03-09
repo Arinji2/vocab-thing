@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/arinji2/vocab-thing/internal/auth"
 	"github.com/arinji2/vocab-thing/internal/models"
 	"github.com/arinji2/vocab-thing/internal/utils"
 )
@@ -126,4 +127,33 @@ func (m *SessionModel) ByUserIDWithProvider(ctx context.Context, id string) ([]m
 	}
 
 	return sessions, nil
+}
+
+func (m *SessionModel) Validate(ctx context.Context, sessionID string) (models.Session, error) {
+	query := `SELECT id, userId, expiresAt FROM sessions WHERE id = ?`
+
+	row := m.DB.QueryRowContext(ctx, query, sessionID)
+
+	var session models.Session
+	var expiresAtStr string
+
+	err := row.Scan(&session.ID, &session.UserID, &expiresAtStr)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return models.Session{}, fmt.Errorf("session not found with id %s: %w", sessionID, err)
+		}
+		return models.Session{}, fmt.Errorf("scanning session row: %w", err)
+	}
+
+	parsedTime, err := utils.StringToTime(expiresAtStr, fmt.Sprintf("Warning: could not parse expiresAt '%s' for session %s", expiresAtStr, sessionID))
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	session.ExpiresAt = parsedTime
+	if session.ExpiresAt.Before(time.Now()) {
+		return models.Session{}, auth.ErrSessionExpired
+	}
+	session.ExpiresAt = parsedTime
+
+	return session, nil
 }
