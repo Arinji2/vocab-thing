@@ -53,6 +53,50 @@ func (p *PhraseHandler) CreatePhrase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 	writeJSON(w, http.StatusOK, phraseData)
+}
+
+type createPhraseTagRequest struct {
+	PhraseID string `json:"phraseID"`
+	TagName  string `json:"tagName"`
+	TagColor string `json:"tagColor"`
+}
+
+func (p *PhraseHandler) CreateTag(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	userSession, ok := auth.SessionFromContext(ctx)
+	if !ok {
+		http.Error(w, "no session found", http.StatusInternalServerError)
+		return
+	}
+
+	var data createPhraseTagRequest
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		fmt.Println(err.Error())
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	phraseModel := database.PhraseModel{DB: p.DB}
+
+	verifiedData, err := phraseModel.ByID(ctx, data.PhraseID, userSession.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	tagData := models.PhraseTag{
+		PhraseID:  verifiedData.Phrase.ID,
+		TagName:   data.TagName,
+		TagColor:  data.TagColor,
+		CreatedAt: time.Now().UTC(),
+	}
+	err = phraseModel.CreateTag(ctx, &tagData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, tagData)
 }
