@@ -68,7 +68,7 @@ func (p *PhraseModel) ByID(ctx context.Context, id string, userID string) (*mode
         SELECT p.id, p.userId, p.phrase, p.phraseDefinition, p.pinned, p.foundIn, p.public, p.usageCount, p.createdAt, 
         pt.id, pt.phraseId, pt.tagName, pt.tagColor, pt.createdAt
         FROM phrases p
-        LEFT JOIN phraseTags pt ON p.id = pt.phraseId
+        LEFT JOIN phrase_tags pt ON p.id = pt.phraseId
         WHERE p.id = ? AND p.userId = ?
     `
 	rows, err := p.DB.QueryContext(ctx, query, id, userID)
@@ -114,8 +114,7 @@ type Scanner interface {
 func scanTaggedPhrase(scanner Scanner) (models.Phrase, *models.PhraseTag, error) {
 	var phrase models.Phrase
 	var phraseCreatedAtStr string
-	var tagID, tagPhraseID, tagName, tagColor sql.NullString
-	var tagCreatedAtStr string
+	var tagID, tagPhraseID, tagName, tagColor, tagCreatedAtStr sql.NullString
 
 	err := scanner.Scan(
 		&phrase.ID,
@@ -149,10 +148,12 @@ func scanTaggedPhrase(scanner Scanner) (models.Phrase, *models.PhraseTag, error)
 			TagName:  tagName.String,
 			TagColor: tagColor.String,
 		}
-		tag.CreatedAt, _ = utils.StringToTime(
-			tagCreatedAtStr,
-			fmt.Sprintf("Warning: could not parse createdAt '%s' for phrase tag %s for phrase %s", tagCreatedAtStr, tag.TagName, phrase.Phrase),
-		)
+		if tagCreatedAtStr.Valid {
+			tag.CreatedAt, _ = utils.StringToTime(
+				tagCreatedAtStr.String,
+				fmt.Sprintf("Warning: could not parse createdAt '%s' for phrase tag %s for phrase %s", tagCreatedAtStr.String, tag.TagName, phrase.Phrase),
+			)
+		}
 		return phrase, &tag, nil
 	}
 	return phrase, nil, nil
