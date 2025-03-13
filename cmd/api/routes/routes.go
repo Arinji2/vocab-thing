@@ -3,6 +3,7 @@ package routes
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -14,14 +15,16 @@ import (
 func RegisterRoutes(db *sql.DB) http.Handler {
 	handler := handlers.NewHandler(db)
 	userHandler := handlers.UserHandler{Handler: handler}
+	phraseHandler := handlers.PhraseHandler{Handler: handler}
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /", userHandler.GetAllUsers)
-	mux.HandleFunc("POST /user/create", userHandler.CreateUser)
-	mux.HandleFunc("POST /oauth/generate-code-url", userHandler.GenerateCodeURL)
-	mux.HandleFunc("POST /oauth/callback", userHandler.CallbackHandler)
-	mux.HandleFunc("POST /user/create/guest", userHandler.CreateGuestUser)
-	mux.Handle("GET /user/authenticated", authenticatedMiddleware(
-		http.HandlerFunc(userHandler.AuthenticatedRoute), db))
+
+	logRoute(mux, "GET", "/", userHandler.GetAllUsers, nil)
+	logRoute(mux, "POST", "/user/create", userHandler.CreateUser, nil)
+	logRoute(mux, "POST", "/oauth/generate-code-url", userHandler.GenerateCodeURL, nil)
+	logRoute(mux, "POST", "/oauth/callback", userHandler.CallbackHandler, nil)
+	logRoute(mux, "POST", "/user/create/guest", userHandler.CreateGuestUser, nil)
+	logRoute(mux, "GET", "/user/authenticated", userHandler.AuthenticatedRoute, db)
+	logRoute(mux, "POST", "/phrase/create/phrase", phraseHandler.CreatePhrase, db)
 
 	return corsMiddleware(mux)
 }
@@ -54,13 +57,12 @@ func corsMiddleware(next http.Handler) http.Handler {
 	frontendURL := os.Getenv("FRONTEND_URL")
 	fmt.Printf("Allowing CORS For URL: %s", frontendURL)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", frontendURL) // update with frontendURL
+		w.Header().Set("Access-Control-Allow-Origin", frontendURL)
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, X-CSRF-Token")
 		w.Header().Set("Access-Control-Expose-Headers", "Link")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
-		// Handle preflight OPTIONS request
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusNoContent)
 			return
@@ -68,4 +70,14 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func logRoute(mux *http.ServeMux, method, route string, handlerFunc http.HandlerFunc, db *sql.DB) {
+	if db != nil {
+		mux.Handle(method+" "+route, authenticatedMiddleware(handlerFunc, db))
+		log.Printf("Registered %s route for %s (authenticated)\n", route, method)
+	} else {
+		mux.HandleFunc(method+" "+route, handlerFunc)
+		log.Printf("Registered %s route for %s\n", route, method)
+	}
 }
