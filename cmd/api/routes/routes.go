@@ -25,6 +25,7 @@ func RegisterRoutes(db *sql.DB) http.Handler {
 	logRoute(mux, "POST", "/user/create/guest", userHandler.CreateGuestUser, nil)
 	logRoute(mux, "GET", "/user/authenticated", userHandler.AuthenticatedRoute, db)
 	logRoute(mux, "POST", "/phrase/create/phrase", phraseHandler.CreatePhrase, db)
+	logRoute(mux, "POST", "/phrase/create/tag", phraseHandler.CreateTag, db)
 
 	return corsMiddleware(mux)
 }
