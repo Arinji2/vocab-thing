@@ -29,3 +29,28 @@ type Session struct {
 	ExpiresAt    time.Time `json:"expires_at" sql:"expiresAt"`
 	CreatedAt    time.Time `json:"created_at" sql:"createdAt"`
 }
+
+type Phrase struct {
+	ID               string    `json:"id" sql:"id"`
+	UserID           string    `json:"user_id" sql:"userId"`
+	Phrase           string    `json:"phrase" sql:"phrase"`
+	PhraseDefinition string    `json:"phrase_definition" sql:"phraseDefinition"`
+	Pinned           bool      `json:"pinned" sql:"pinned"`
+	FoundIn          string    `json:"found_in" sql:"foundIn"`
+	Public           bool      `json:"public" sql:"public"`
+	UsageCount       int       `json:"usage_count" sql:"usageCount"`
+	CreatedAt        time.Time `json:"created_at" sql:"createdAt"`
+}
+
+type PhraseTag struct {
+	ID        string    `json:"id" sql:"id"`
+	PhraseID  string    `json:"phrase_id" sql:"phraseId"`
+	TagName   string    `json:"tag_name" sql:"tagName"`
+	TagColor  string    `json:"tag_color" sql:"tagColor"`
+	CreatedAt time.Time `json:"created_at" sql:"createdAt"`
+}
+
+type TaggedPhrase struct {
+	Phrase Phrase
+	Tag    []PhraseTag
+}
