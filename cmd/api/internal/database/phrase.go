@@ -20,7 +20,6 @@ func (p *PhraseModel) CreatePhrase(ctx context.Context, phrase *models.Phrase) e
 		return fmt.Errorf("starting transaction: %w", err)
 	}
 	defer tx.Rollback()
-
 	phrase.CreatedAt = time.Now().UTC()
 	query := `
             INSERT INTO phrases (id, userId, phrase, phraseDefinition, pinned, foundIn, public, usageCount, createdAt)
@@ -82,51 +81,18 @@ func (p *PhraseModel) ByID(ctx context.Context, id string, userID string) (*mode
 	phraseLoaded := false
 
 	for rows.Next() {
-		var phraseCreatedAtStr, tagCreatedAtStr string
-		var tag models.PhraseTag
-		var tagID, phraseID sql.NullString
-
-		err = rows.Scan(
-			&taggedPhrase.Phrase.ID,
-			&taggedPhrase.Phrase.UserID,
-			&taggedPhrase.Phrase.Phrase,
-			&taggedPhrase.Phrase.PhraseDefinition,
-			&taggedPhrase.Phrase.Pinned,
-			&taggedPhrase.Phrase.FoundIn,
-			&taggedPhrase.Phrase.Public,
-			&taggedPhrase.Phrase.UsageCount,
-			&phraseCreatedAtStr,
-			&tagID,
-			&phraseID,
-			&tag.TagName,
-			&tag.TagColor,
-			&tagCreatedAtStr,
-		)
+		phrase, tag, err := scanTaggedPhrase(rows)
 		if err != nil {
 			return nil, fmt.Errorf("scanning taggedPhrase row: %w", err)
 		}
 
-		// Parse the phrase creation time on the first iteration
 		if !phraseLoaded {
-			taggedPhrase.Phrase.CreatedAt, _ = utils.StringToTime(
-				phraseCreatedAtStr,
-				fmt.Sprintf("Warning: could not parse createdAt '%s' for phrase %s",
-					phraseCreatedAtStr, taggedPhrase.Phrase.Phrase),
-			)
+			taggedPhrase.Phrase = phrase
 			phraseLoaded = true
 		}
 
-		// Only add the tag if it's not NULL (some phrases might not have tags)
-		if tagID.Valid {
-			tag.ID = tagID.String
-			tag.PhraseID = phraseID.String
-			tag.CreatedAt, _ = utils.StringToTime(
-				tagCreatedAtStr,
-				fmt.Sprintf("Warning: could not parse createdAt '%s' for phrase tag %s for phrase %s",
-					tagCreatedAtStr, tag.TagName, taggedPhrase.Phrase.Phrase),
-			)
-
-			taggedPhrase.Tag = append(taggedPhrase.Tag, tag)
+		if tag != nil {
+			taggedPhrase.Tag = append(taggedPhrase.Tag, *tag)
 		}
 	}
 
@@ -141,93 +107,53 @@ func (p *PhraseModel) ByID(ctx context.Context, id string, userID string) (*mode
 	return &taggedPhrase, nil
 }
 
-func (p *PhraseModel) Search(ctx context.Context, searchQuery string, userID string) ([]models.TaggedPhrase, error) {
-	query := `
-    WITH search_results AS (
-        SELECT rowid FROM phrases_fts 
-        WHERE phrase MATCH ? 
-        ORDER BY rank
-    )
-    SELECT p.id, p.userId, p.phrase, p.phraseDefinition, p.pinned, p.foundIn, p.public, p.usageCount, p.createdAt, 
-           pt.id, pt.phraseId, pt.tagName, pt.tagColor, pt.createdAt
-    FROM search_results sr
-    JOIN phrases p ON sr.rowid = p.id
-    LEFT JOIN phrase_tags pt ON p.id = pt.phraseId
-    WHERE p.userId = ?  
-    ORDER BY p.usageCount DESC, p.createdAt DESC
-`
+type Scanner interface {
+	Scan(dest ...any) error
+}
 
-	rows, err := p.DB.QueryContext(ctx, query, searchQuery, userID)
+func scanTaggedPhrase(scanner Scanner) (models.Phrase, *models.PhraseTag, error) {
+	var phrase models.Phrase
+	var phraseCreatedAtStr string
+	var tagID, tagPhraseID, tagName, tagColor sql.NullString
+	var tagCreatedAtStr string
+
+	err := scanner.Scan(
+		&phrase.ID,
+		&phrase.UserID,
+		&phrase.Phrase,
+		&phrase.PhraseDefinition,
+		&phrase.Pinned,
+		&phrase.FoundIn,
+		&phrase.Public,
+		&phrase.UsageCount,
+		&phraseCreatedAtStr,
+		&tagID,
+		&tagPhraseID,
+		&tagName,
+		&tagColor,
+		&tagCreatedAtStr,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("searching phrases: %w", err)
+		return phrase, nil, err
 	}
-	defer rows.Close()
 
-	uniquePhraseMap := make(map[string]*models.TaggedPhrase)
+	phrase.CreatedAt, _ = utils.StringToTime(
+		phraseCreatedAtStr,
+		fmt.Sprintf("Warning: could not parse createdAt '%s' for phrase %s", phraseCreatedAtStr, phrase.Phrase),
+	)
 
-	for rows.Next() {
-		var phraseCreatedAtStr, tagCreatedAtStr string
-		var tagID, tagPhraseID, tagName, tagColor sql.NullString
-		var phrase models.Phrase
-
-		err = rows.Scan(
-			&phrase.ID,
-			&phrase.UserID,
-			&phrase.Phrase,
-			&phrase.PhraseDefinition,
-			&phrase.Pinned,
-			&phrase.FoundIn,
-			&phrase.Public,
-			&phrase.UsageCount,
-			&phraseCreatedAtStr,
-			&tagID,
-			&tagPhraseID,
-			&tagName,
-			&tagColor,
-			&tagCreatedAtStr,
+	if tagID.Valid && tagName.Valid {
+		tag := models.PhraseTag{
+			ID:       tagID.String,
+			PhraseID: tagPhraseID.String,
+			TagName:  tagName.String,
+			TagColor: tagColor.String,
+		}
+		tag.CreatedAt, _ = utils.StringToTime(
+			tagCreatedAtStr,
+			fmt.Sprintf("Warning: could not parse createdAt '%s' for phrase tag %s for phrase %s", tagCreatedAtStr, tag.TagName, phrase.Phrase),
 		)
-		if err != nil {
-			return nil, fmt.Errorf("scanning search result row: %w", err)
-		}
-
-		phrase.CreatedAt, _ = utils.StringToTime(
-			phraseCreatedAtStr,
-			fmt.Sprintf("Warning: could not parse createdAt '%s' for phrase %s",
-				phraseCreatedAtStr, phrase.Phrase),
-		)
-
-		if _, exists := uniquePhraseMap[phrase.ID]; !exists {
-			uniquePhraseMap[phrase.ID] = &models.TaggedPhrase{
-				Phrase: phrase,
-				Tag:    []models.PhraseTag{},
-			}
-		}
-
-		if tagID.Valid && tagName.Valid {
-			var tag models.PhraseTag
-			tag.ID = tagID.String
-			tag.PhraseID = tagPhraseID.String
-			tag.TagName = tagName.String
-			tag.TagColor = tagColor.String
-
-			tag.CreatedAt, _ = utils.StringToTime(
-				tagCreatedAtStr,
-				fmt.Sprintf("Warning: could not parse createdAt '%s' for phrase tag %s for phrase %s",
-					tagCreatedAtStr, tag.TagName, phrase.Phrase),
-			)
-
-			uniquePhraseMap[phrase.ID].Tag = append(uniquePhraseMap[phrase.ID].Tag, tag)
-		}
+		return phrase, &tag, nil
 	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterating search result rows: %w", err)
-	}
-
-	results := make([]models.TaggedPhrase, 0, len(uniquePhraseMap))
-	for _, taggedPhrase := range uniquePhraseMap {
-		results = append(results, *taggedPhrase)
-	}
-
-	return results, nil
+	return phrase, nil, nil
 }
