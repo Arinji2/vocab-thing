@@ -114,14 +114,7 @@ func (h *UserHandler) CreateGuestUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) AuthenticatedRoute(w http.ResponseWriter, r *http.Request) {
-	ctx, err := authenticatedRoute(r, h.DB)
-	if err != nil {
-		if err == auth.ErrSessionExpired {
-			auth.DeleteUserSessionCookie(w)
-		}
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
+	ctx := r.Context()
 	userSession, ok := auth.SessionFromContext(ctx)
 	if !ok {
 		http.Error(w, "no session found", http.StatusInternalServerError)

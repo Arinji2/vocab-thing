@@ -7,6 +7,8 @@ import (
 	"os"
 
 	"github.com/arinji2/vocab-thing/handlers"
+	"github.com/arinji2/vocab-thing/internal/auth"
+	"github.com/arinji2/vocab-thing/internal/database"
 )
 
 func RegisterRoutes(db *sql.DB) http.Handler {
@@ -18,8 +20,34 @@ func RegisterRoutes(db *sql.DB) http.Handler {
 	mux.HandleFunc("POST /oauth/generate-code-url", userHandler.GenerateCodeURL)
 	mux.HandleFunc("POST /oauth/callback", userHandler.CallbackHandler)
 	mux.HandleFunc("POST /user/create/guest", userHandler.CreateGuestUser)
-	mux.HandleFunc("GET /user/authenticated", userHandler.AuthenticatedRoute)
+	mux.Handle("GET /user/authenticated", authenticatedMiddleware(
+		http.HandlerFunc(userHandler.AuthenticatedRoute), db))
+
 	return corsMiddleware(mux)
+}
+
+func authenticatedMiddleware(next http.Handler, db *sql.DB) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sessionID, err := auth.GetUserSession(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		ctx := r.Context()
+		sessionModel := database.SessionModel{DB: db}
+		sessionData, err := sessionModel.Validate(ctx, sessionID)
+		if err != nil {
+			if err == auth.ErrSessionExpired {
+				auth.DeleteUserSessionCookie(w)
+			}
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+		ctx = auth.ContextWithSession(ctx, sessionData)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 func corsMiddleware(next http.Handler) http.Handler {
