@@ -51,6 +51,6 @@ type PhraseTag struct {
 }
 
 type TaggedPhrase struct {
-	Phrase Phrase
-	Tag    []PhraseTag
+	Phrase Phrase      `json:"phrase"`
+	Tag    []PhraseTag `json:"tag"`
 }
