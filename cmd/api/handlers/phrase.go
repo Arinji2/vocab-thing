@@ -10,6 +10,7 @@ import (
 	"github.com/arinji2/vocab-thing/internal/auth"
 	"github.com/arinji2/vocab-thing/internal/database"
 	"github.com/arinji2/vocab-thing/internal/models"
+	"github.com/go-chi/chi/v5"
 )
 
 type PhraseHandler struct {
@@ -99,4 +100,29 @@ func (p *PhraseHandler) CreateTag(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, tagData)
+}
+
+type getPhraseByIDRequest struct {
+	ID string `json:"id"`
+}
+
+func (p *PhraseHandler) GetPhraseByID(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	userSession, ok := auth.SessionFromContext(ctx)
+	if !ok {
+		http.Error(w, "no session found", http.StatusInternalServerError)
+		return
+	}
+	phraseID := chi.URLParam(r, "id")
+
+	phraseModel := database.PhraseModel{DB: p.DB}
+	responseData, err := phraseModel.ByID(ctx, phraseID, userSession.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, responseData)
 }

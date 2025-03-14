@@ -10,4 +10,7 @@ require (
 	golang.org/x/oauth2 v0.27.0
 )
 
-require github.com/gorilla/securecookie v1.1.2 // indirect
+require (
+	github.com/go-chi/chi/v5 v5.2.1 // indirect
+	github.com/gorilla/securecookie v1.1.2 // indirect
+)

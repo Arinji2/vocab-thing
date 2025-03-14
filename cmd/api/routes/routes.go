@@ -3,61 +3,89 @@ package routes
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/arinji2/vocab-thing/handlers"
 	"github.com/arinji2/vocab-thing/internal/auth"
 	"github.com/arinji2/vocab-thing/internal/database"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 func RegisterRoutes(db *sql.DB) http.Handler {
 	handler := handlers.NewHandler(db)
 	userHandler := handlers.UserHandler{Handler: handler}
 	phraseHandler := handlers.PhraseHandler{Handler: handler}
-	mux := http.NewServeMux()
 
-	logRoute(mux, "GET", "/", userHandler.GetAllUsers, nil)
-	logRoute(mux, "POST", "/user/create", userHandler.CreateUser, nil)
-	logRoute(mux, "POST", "/oauth/generate-code-url", userHandler.GenerateCodeURL, nil)
-	logRoute(mux, "POST", "/oauth/callback", userHandler.CallbackHandler, nil)
-	logRoute(mux, "POST", "/user/create/guest", userHandler.CreateGuestUser, nil)
-	logRoute(mux, "GET", "/user/authenticated", userHandler.AuthenticatedRoute, db)
-	logRoute(mux, "POST", "/phrase/create/phrase", phraseHandler.CreatePhrase, db)
-	logRoute(mux, "POST", "/phrase/create/tag", phraseHandler.CreateTag, db)
+	r := chi.NewRouter()
 
-	return corsMiddleware(mux)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.Heartbeat("/ping"))
+	r.Use(middleware.Timeout(60 * time.Second))
+	r.Use(corsMiddleware)
+
+	r.Group(func(r chi.Router) {
+		r.Get("/", userHandler.GetAllUsers)
+		r.Post("/user/create", userHandler.CreateUser)
+		r.Post("/oauth/generate-code-url", userHandler.GenerateCodeURL)
+		r.Post("/oauth/callback", userHandler.CallbackHandler)
+		r.Post("/user/create/guest", userHandler.CreateGuestUser)
+	})
+
+	r.Group(func(r chi.Router) {
+		r.Use(authenticatedMiddleware(db))
+		r.Get("/user/authenticated", userHandler.AuthenticatedRoute)
+
+		r.Route("/phrase", func(r chi.Router) {
+			r.Route("/create", func(r chi.Router) {
+				r.Post("/phrase", phraseHandler.CreatePhrase)
+				r.Post("/tag", phraseHandler.CreateTag)
+			})
+			r.Get("/{id}", phraseHandler.GetPhraseByID)
+
+			// Paginated list of all phrases
+			// r.Get("/", phraseHandler.GetAllPhrases)
+		})
+	})
+
+	return r
 }
 
-func authenticatedMiddleware(next http.Handler, db *sql.DB) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sessionID, err := auth.GetUserSession(r)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-
-		ctx := r.Context()
-		sessionModel := database.SessionModel{DB: db}
-		sessionData, err := sessionModel.Validate(ctx, sessionID)
-		if err != nil {
-			if err == auth.ErrSessionExpired {
-				auth.DeleteUserSessionCookie(w)
+func authenticatedMiddleware(db *sql.DB) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			sessionID, err := auth.GetUserSession(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+				return
 			}
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-		ctx = auth.ContextWithSession(ctx, sessionData)
 
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+			ctx := r.Context()
+			sessionModel := database.SessionModel{DB: db}
+			sessionData, err := sessionModel.Validate(ctx, sessionID)
+			if err != nil {
+				if err == auth.ErrSessionExpired {
+					auth.DeleteUserSessionCookie(w)
+				}
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+				return
+			}
+
+			ctx = auth.ContextWithSession(ctx, sessionData)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }
 
 func corsMiddleware(next http.Handler) http.Handler {
-	frontendURL := os.Getenv("FRONTEND_URL")
-	fmt.Printf("Allowing CORS For URL: %s", frontendURL)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		frontendURL := os.Getenv("FRONTEND_URL")
+		fmt.Printf("Allowing CORS For URL: %s \n", frontendURL)
+
 		w.Header().Set("Access-Control-Allow-Origin", frontendURL)
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, X-CSRF-Token")
@@ -71,14 +99,4 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
-}
-
-func logRoute(mux *http.ServeMux, method, route string, handlerFunc http.HandlerFunc, db *sql.DB) {
-	if db != nil {
-		mux.Handle(method+" "+route, authenticatedMiddleware(handlerFunc, db))
-		log.Printf("Registered %s route for %s (authenticated)\n", route, method)
-	} else {
-		mux.HandleFunc(method+" "+route, handlerFunc)
-		log.Printf("Registered %s route for %s\n", route, method)
-	}
 }
