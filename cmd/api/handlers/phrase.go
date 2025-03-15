@@ -9,6 +9,7 @@ import (
 
 	"github.com/arinji2/vocab-thing/internal/auth"
 	"github.com/arinji2/vocab-thing/internal/database"
+	"github.com/arinji2/vocab-thing/internal/httpmiddleware"
 	"github.com/arinji2/vocab-thing/internal/models"
 	"github.com/go-chi/chi/v5"
 )
@@ -119,6 +120,31 @@ func (p *PhraseHandler) GetPhraseByID(w http.ResponseWriter, r *http.Request) {
 
 	phraseModel := database.PhraseModel{DB: p.DB}
 	responseData, err := phraseModel.ByID(ctx, phraseID, userSession.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, responseData)
+}
+
+func (p *PhraseHandler) GetAllPhrases(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	userSession, ok := auth.SessionFromContext(ctx)
+	if !ok {
+		http.Error(w, "no session found", http.StatusInternalServerError)
+		return
+	}
+	paginationData, exists := httpmiddleware.PaginationFromContext(ctx)
+	if !exists {
+		http.Error(w, "no pagination data found", http.StatusInternalServerError)
+		return
+	}
+
+	phraseModel := database.PhraseModel{DB: p.DB}
+	responseData, err := phraseModel.All(ctx, paginationData.Page, paginationData.PageSize, userSession.UserID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

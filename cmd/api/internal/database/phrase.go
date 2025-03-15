@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math"
+	"strings"
 	"time"
 
 	"github.com/arinji2/vocab-thing/internal/models"
@@ -105,6 +107,138 @@ func (p *PhraseModel) ByID(ctx context.Context, id string, userID string) (*mode
 	}
 
 	return &taggedPhrase, nil
+}
+
+func (p *PhraseModel) All(ctx context.Context, pageNumber, pageSize int, userID string) ([]models.TaggedPhrase, error) {
+	totalPages, err := p.CountTotalPages(ctx, pageSize, userID)
+	if err != nil {
+		return nil, fmt.Errorf("counting total pages: %w", err)
+	}
+	if pageNumber > totalPages {
+		return nil, fmt.Errorf("page number %d is greater than total pages %d", pageNumber, totalPages)
+	}
+
+	phrasesQuery := `
+		SELECT id, userId, phrase, phraseDefinition, pinned, foundIn, public, usageCount, createdAt
+		FROM phrases
+		WHERE userId = ?
+		ORDER BY createdAt DESC
+		LIMIT ? OFFSET ?
+	`
+	offset := (pageNumber - 1) * pageSize
+	phraseRows, err := p.DB.QueryContext(ctx, phrasesQuery, userID, pageSize, offset)
+	if err != nil {
+		return nil, fmt.Errorf("querying paginated phrases: %w", err)
+	}
+	defer phraseRows.Close()
+
+	phraseIDs := []string{}
+	phraseMap := make(map[string]*models.TaggedPhrase)
+
+	for phraseRows.Next() {
+		var phrase models.Phrase
+		var phraseCreatedAtStr string
+
+		err = phraseRows.Scan(
+			&phrase.ID,
+			&phrase.UserID,
+			&phrase.Phrase,
+			&phrase.PhraseDefinition,
+			&phrase.Pinned,
+			&phrase.FoundIn,
+			&phrase.Public,
+			&phrase.UsageCount,
+			&phraseCreatedAtStr,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scanning phrase row: %w", err)
+		}
+
+		phrase.CreatedAt, _ = utils.StringToTime(
+			phraseCreatedAtStr,
+			fmt.Sprintf("Warning: could not parse createdAt '%s' for phrase %s", phraseCreatedAtStr, phrase.Phrase),
+		)
+
+		phraseIDs = append(phraseIDs, phrase.ID)
+		phraseMap[phrase.ID] = &models.TaggedPhrase{
+			Phrase: phrase,
+			Tag:    []models.PhraseTag{},
+		}
+	}
+
+	if err := phraseRows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating phrase rows: %w", err)
+	}
+
+	if len(phraseIDs) == 0 {
+		return []models.TaggedPhrase{}, nil
+	}
+
+	placeholders := make([]string, len(phraseIDs))
+	args := make([]any, len(phraseIDs))
+	for i, id := range phraseIDs {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+
+	tagsQuery := fmt.Sprintf(`
+		SELECT id, phraseId, tagName, tagColor, createdAt
+		FROM phrase_tags
+		WHERE phraseId IN (%s)
+	`, strings.Join(placeholders, ","))
+
+	tagRows, err := p.DB.QueryContext(ctx, tagsQuery, args...)
+	if err != nil {
+		return nil, fmt.Errorf("querying tags: %w", err)
+	}
+	defer tagRows.Close()
+
+	for tagRows.Next() {
+		var tag models.PhraseTag
+		var tagCreatedAtStr string
+
+		err = tagRows.Scan(
+			&tag.ID,
+			&tag.PhraseID,
+			&tag.TagName,
+			&tag.TagColor,
+			&tagCreatedAtStr,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scanning tag row: %w", err)
+		}
+
+		tag.CreatedAt, _ = utils.StringToTime(
+			tagCreatedAtStr,
+			fmt.Sprintf("Warning: could not parse createdAt '%s' for phrase tag %s", tagCreatedAtStr, tag.TagName),
+		)
+
+		if phrase, exists := phraseMap[tag.PhraseID]; exists {
+			phrase.Tag = append(phrase.Tag, tag)
+		}
+	}
+
+	if err := tagRows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating tag rows: %w", err)
+	}
+
+	taggedPhrases := make([]models.TaggedPhrase, 0, len(phraseMap))
+	for _, phrase := range phraseMap {
+		taggedPhrases = append(taggedPhrases, *phrase)
+	}
+
+	return taggedPhrases, nil
+}
+
+func (p *PhraseModel) CountTotalPages(ctx context.Context, pageSize int, userID string) (int, error) {
+	var totalRecords int
+	query := `SELECT COUNT(*) FROM phrases WHERE userId = ?`
+	err := p.DB.QueryRowContext(ctx, query, userID).Scan(&totalRecords)
+	if err != nil {
+		return 0, fmt.Errorf("counting phrases: %w", err)
+	}
+	totalPages := int(math.Ceil(float64(totalRecords) / float64(pageSize)))
+	return totalPages, nil
 }
 
 type Scanner interface {

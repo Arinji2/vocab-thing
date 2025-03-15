@@ -44,7 +44,7 @@ func RegisterRoutes(db *sql.DB) http.Handler {
 			})
 			r.Get("/{id}", phraseHandler.GetPhraseByID)
 
-			// r.With(httpmiddleware.Paginate.Get("/", phraseHandler.GetAllPhrases)
+			r.With(httpmiddleware.Paginate).Get("/", phraseHandler.GetAllPhrases)
 		})
 	})
 
