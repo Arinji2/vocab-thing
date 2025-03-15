@@ -18,7 +18,7 @@ type Pagination struct {
 type Sorting struct {
 	SortBy  string // createdAt, usageCount
 	Order   string // ASC or DESC
-	GroupBy string // foundIn
+	GroupBy string // foundIn or public
 }
 
 func Paginate(next http.Handler) http.Handler {
@@ -77,8 +77,10 @@ func validateSortOrder(order string) string {
 }
 
 func validateGroupBy(groupBy string) string {
-	if strings.ToLower(groupBy) == "foundin" {
+	switch strings.ToLower(groupBy) {
+	case "foundin", "public":
 		return groupBy
+	default:
+		return "foundIn"
 	}
-	return ""
 }

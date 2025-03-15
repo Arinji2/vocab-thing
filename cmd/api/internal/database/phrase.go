@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 
@@ -228,15 +229,24 @@ func (p *PhraseModel) All(ctx context.Context, pageNumber, pageSize int, sortBy,
 	if err := tagRows.Err(); err != nil {
 		return nil, fmt.Errorf("iterating tag rows: %w", err)
 	}
-	if groupBy == "foundIn" {
+	if groupBy == "foundIn" || groupBy == "public" {
 		grouped := make(map[string][]models.TaggedPhrase)
 		orderedGroups := []string{}
 
 		for _, phrase := range phrases {
-			if _, exists := grouped[phrase.Phrase.FoundIn]; !exists {
-				orderedGroups = append(orderedGroups, phrase.Phrase.FoundIn)
+			switch groupBy {
+			case "foundIn":
+				if _, exists := grouped[phrase.Phrase.FoundIn]; !exists {
+					orderedGroups = append(orderedGroups, phrase.Phrase.FoundIn)
+				}
+				grouped[phrase.Phrase.FoundIn] = append(grouped[phrase.Phrase.FoundIn], phrase)
+
+			case "public":
+				if _, exists := grouped[strconv.FormatBool(phrase.Phrase.Public)]; !exists {
+					orderedGroups = append(orderedGroups, strconv.FormatBool(phrase.Phrase.Public))
+				}
+				grouped[strconv.FormatBool(phrase.Phrase.Public)] = append(grouped[strconv.FormatBool(phrase.Phrase.Public)], phrase)
 			}
-			grouped[phrase.Phrase.FoundIn] = append(grouped[phrase.Phrase.FoundIn], phrase)
 		}
 
 		var groupedPhrases []models.TaggedPhrase
