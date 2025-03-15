@@ -151,3 +151,27 @@ func (p *PhraseHandler) GetAllPhrases(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, responseData)
 }
+
+func (p *PhraseHandler) SearchPhrases(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	userSession, ok := auth.SessionFromContext(ctx)
+	if !ok {
+		http.Error(w, "no session found", http.StatusInternalServerError)
+		return
+	}
+	searchingData, exists := httpmiddleware.SearchingFromContext(ctx)
+	if !exists {
+		http.Error(w, "no searching data found", http.StatusInternalServerError)
+		return
+	}
+	phraseModel := database.PhraseModel{DB: p.DB}
+	responseData, err := phraseModel.Search(ctx, searchingData.Term, userSession.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, responseData)
+}

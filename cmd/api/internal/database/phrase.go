@@ -247,6 +247,58 @@ func (p *PhraseModel) All(ctx context.Context, pageNumber, pageSize int, sortBy,
 	return phrases, nil
 }
 
+func (p *PhraseModel) Search(ctx context.Context, searchTerm, userID string) ([]models.Phrase, error) {
+	searchQuery := "%" + strings.ToLower(searchTerm) + "%"
+
+	query := `
+		SELECT id, userId, phrase, phraseDefinition, pinned, foundIn, public, usageCount, createdAt
+		FROM phrases
+		WHERE userId = ? 
+		AND LOWER(phrase || ' ' || phraseDefinition) LIKE ?
+	`
+
+	rows, err := p.DB.QueryContext(ctx, query, userID, searchQuery)
+	if err != nil {
+		return nil, fmt.Errorf("querying search results: %w", err)
+	}
+	defer rows.Close()
+
+	var phrases []models.Phrase
+
+	for rows.Next() {
+		var phrase models.Phrase
+		var createdAtStr string
+
+		err = rows.Scan(
+			&phrase.ID,
+			&phrase.UserID,
+			&phrase.Phrase,
+			&phrase.PhraseDefinition,
+			&phrase.Pinned,
+			&phrase.FoundIn,
+			&phrase.Public,
+			&phrase.UsageCount,
+			&createdAtStr,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scanning search row: %w", err)
+		}
+
+		phrase.CreatedAt, _ = utils.StringToTime(
+			createdAtStr,
+			fmt.Sprintf("Warning: could not parse createdAt '%s' for phrase %s", createdAtStr, phrase.Phrase),
+		)
+
+		phrases = append(phrases, phrase)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating search rows: %w", err)
+	}
+
+	return phrases, nil
+}
+
 type Scanner interface {
 	Scan(dest ...any) error
 }
