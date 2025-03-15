@@ -142,9 +142,8 @@ func (p *PhraseHandler) GetAllPhrases(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no pagination data found", http.StatusInternalServerError)
 		return
 	}
-
 	phraseModel := database.PhraseModel{DB: p.DB}
-	responseData, err := phraseModel.All(ctx, paginationData.Page, paginationData.PageSize, userSession.UserID)
+	responseData, err := phraseModel.All(ctx, paginationData.Page, paginationData.PageSize, paginationData.Sorting.SortBy, paginationData.Sorting.Order, paginationData.Sorting.GroupBy, userSession.UserID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

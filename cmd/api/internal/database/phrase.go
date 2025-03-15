@@ -109,7 +109,18 @@ func (p *PhraseModel) ByID(ctx context.Context, id string, userID string) (*mode
 	return &taggedPhrase, nil
 }
 
-func (p *PhraseModel) All(ctx context.Context, pageNumber, pageSize int, userID string) ([]models.TaggedPhrase, error) {
+func (p *PhraseModel) CountTotalPages(ctx context.Context, pageSize int, userID string) (int, error) {
+	var totalRecords int
+	query := `SELECT COUNT(*) FROM phrases WHERE userId = ?`
+	err := p.DB.QueryRowContext(ctx, query, userID).Scan(&totalRecords)
+	if err != nil {
+		return 0, fmt.Errorf("counting phrases: %w", err)
+	}
+	totalPages := int(math.Ceil(float64(totalRecords) / float64(pageSize)))
+	return totalPages, nil
+}
+
+func (p *PhraseModel) All(ctx context.Context, pageNumber, pageSize int, sortBy, order, groupBy string, userID string) ([]models.TaggedPhrase, error) {
 	totalPages, err := p.CountTotalPages(ctx, pageSize, userID)
 	if err != nil {
 		return nil, fmt.Errorf("counting total pages: %w", err)
@@ -118,13 +129,13 @@ func (p *PhraseModel) All(ctx context.Context, pageNumber, pageSize int, userID 
 		return nil, fmt.Errorf("page number %d is greater than total pages %d", pageNumber, totalPages)
 	}
 
-	phrasesQuery := `
-		SELECT id, userId, phrase, phraseDefinition, pinned, foundIn, public, usageCount, createdAt
-		FROM phrases
-		WHERE userId = ?
-		ORDER BY createdAt DESC
-		LIMIT ? OFFSET ?
-	`
+	phrasesQuery := fmt.Sprintf(`
+        SELECT id, userId, phrase, phraseDefinition, pinned, foundIn, public, usageCount, createdAt
+        FROM phrases
+        WHERE userId = ?
+        ORDER BY %s %s
+        LIMIT ? OFFSET ?
+    `, sortBy, order)
 	offset := (pageNumber - 1) * pageSize
 	phraseRows, err := p.DB.QueryContext(ctx, phrasesQuery, userID, pageSize, offset)
 	if err != nil {
@@ -132,8 +143,9 @@ func (p *PhraseModel) All(ctx context.Context, pageNumber, pageSize int, userID 
 	}
 	defer phraseRows.Close()
 
+	var phrases []models.TaggedPhrase
 	phraseIDs := []string{}
-	phraseMap := make(map[string]*models.TaggedPhrase)
+	phraseIndex := make(map[string]int) // Map to track index of phrases in slice
 
 	for phraseRows.Next() {
 		var phrase models.Phrase
@@ -160,10 +172,8 @@ func (p *PhraseModel) All(ctx context.Context, pageNumber, pageSize int, userID 
 		)
 
 		phraseIDs = append(phraseIDs, phrase.ID)
-		phraseMap[phrase.ID] = &models.TaggedPhrase{
-			Phrase: phrase,
-			Tag:    []models.PhraseTag{},
-		}
+		phraseIndex[phrase.ID] = len(phrases)
+		phrases = append(phrases, models.TaggedPhrase{Phrase: phrase, Tag: []models.PhraseTag{}})
 	}
 
 	if err := phraseRows.Err(); err != nil {
@@ -182,10 +192,10 @@ func (p *PhraseModel) All(ctx context.Context, pageNumber, pageSize int, userID 
 	}
 
 	tagsQuery := fmt.Sprintf(`
-		SELECT id, phraseId, tagName, tagColor, createdAt
-		FROM phrase_tags
-		WHERE phraseId IN (%s)
-	`, strings.Join(placeholders, ","))
+        SELECT id, phraseId, tagName, tagColor, createdAt
+        FROM phrase_tags
+        WHERE phraseId IN (%s)
+    `, strings.Join(placeholders, ","))
 
 	tagRows, err := p.DB.QueryContext(ctx, tagsQuery, args...)
 	if err != nil {
@@ -197,13 +207,7 @@ func (p *PhraseModel) All(ctx context.Context, pageNumber, pageSize int, userID 
 		var tag models.PhraseTag
 		var tagCreatedAtStr string
 
-		err = tagRows.Scan(
-			&tag.ID,
-			&tag.PhraseID,
-			&tag.TagName,
-			&tag.TagColor,
-			&tagCreatedAtStr,
-		)
+		err = tagRows.Scan(&tag.ID, &tag.PhraseID, &tag.TagName, &tag.TagColor, &tagCreatedAtStr)
 		if err != nil {
 			return nil, fmt.Errorf("scanning tag row: %w", err)
 		}
@@ -213,32 +217,34 @@ func (p *PhraseModel) All(ctx context.Context, pageNumber, pageSize int, userID 
 			fmt.Sprintf("Warning: could not parse createdAt '%s' for phrase tag %s", tagCreatedAtStr, tag.TagName),
 		)
 
-		if phrase, exists := phraseMap[tag.PhraseID]; exists {
-			phrase.Tag = append(phrase.Tag, tag)
+		if idx, exists := phraseIndex[tag.PhraseID]; exists {
+			phrases[idx].Tag = append(phrases[idx].Tag, tag)
 		}
 	}
 
 	if err := tagRows.Err(); err != nil {
 		return nil, fmt.Errorf("iterating tag rows: %w", err)
 	}
+	if groupBy == "foundIn" {
+		grouped := make(map[string][]models.TaggedPhrase)
+		orderedGroups := []string{}
 
-	taggedPhrases := make([]models.TaggedPhrase, 0, len(phraseMap))
-	for _, phrase := range phraseMap {
-		taggedPhrases = append(taggedPhrases, *phrase)
+		for _, phrase := range phrases {
+			if _, exists := grouped[phrase.Phrase.FoundIn]; !exists {
+				orderedGroups = append(orderedGroups, phrase.Phrase.FoundIn)
+			}
+			grouped[phrase.Phrase.FoundIn] = append(grouped[phrase.Phrase.FoundIn], phrase)
+		}
+
+		var groupedPhrases []models.TaggedPhrase
+		for _, foundIn := range orderedGroups {
+			groupedPhrases = append(groupedPhrases, grouped[foundIn]...)
+		}
+
+		return groupedPhrases, nil
 	}
 
-	return taggedPhrases, nil
-}
-
-func (p *PhraseModel) CountTotalPages(ctx context.Context, pageSize int, userID string) (int, error) {
-	var totalRecords int
-	query := `SELECT COUNT(*) FROM phrases WHERE userId = ?`
-	err := p.DB.QueryRowContext(ctx, query, userID).Scan(&totalRecords)
-	if err != nil {
-		return 0, fmt.Errorf("counting phrases: %w", err)
-	}
-	totalPages := int(math.Ceil(float64(totalRecords) / float64(pageSize)))
-	return totalPages, nil
+	return phrases, nil
 }
 
 type Scanner interface {
