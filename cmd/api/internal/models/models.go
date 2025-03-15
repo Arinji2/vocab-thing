@@ -54,3 +54,9 @@ type TaggedPhrase struct {
 	Phrase Phrase      `json:"phrase"`
 	Tag    []PhraseTag `json:"tag"`
 }
+
+type SyncMetadata struct {
+	ID            string    `json:"id" sql:"id"`
+	UserID        string    `json:"user_id" sql:"userId"`
+	LastUpdatedAt time.Time `json:"last_updated_at" sql:"lastUpdatedAt"`
+}
