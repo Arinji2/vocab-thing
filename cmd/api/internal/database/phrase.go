@@ -125,6 +125,9 @@ func (p *PhraseModel) All(ctx context.Context, pageNumber, pageSize int, sortBy,
 	if err != nil {
 		return nil, fmt.Errorf("counting total pages: %w", err)
 	}
+	if totalPages == 0 {
+		return []models.TaggedPhrase{}, nil
+	}
 	if pageNumber > totalPages {
 		return nil, fmt.Errorf("page number %d is greater than total pages %d", pageNumber, totalPages)
 	}
@@ -262,7 +265,6 @@ func (p *PhraseModel) Search(ctx context.Context, searchTerm, userID string) ([]
 		return nil, fmt.Errorf("querying search results: %w", err)
 	}
 	defer rows.Close()
-
 	var phrases []models.Phrase
 
 	for rows.Next() {
@@ -296,6 +298,9 @@ func (p *PhraseModel) Search(ctx context.Context, searchTerm, userID string) ([]
 		return nil, fmt.Errorf("iterating search rows: %w", err)
 	}
 
+	if len(phrases) == 0 {
+		return []models.Phrase{}, nil
+	}
 	return phrases, nil
 }
 
