@@ -78,6 +78,31 @@ func (p *PhraseModel) UpdatePhrase(ctx context.Context, phrase *models.Phrase, u
 	return nil
 }
 
+func (p *PhraseModel) CreateTag(ctx context.Context, phrase *models.PhraseTag) error {
+	tx, err := p.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("starting transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	phrase.CreatedAt = time.Now().UTC()
+	query := `
+            INSERT INTO phrase_tags (id, phraseId, tagName, tagColor, createdAt)
+            VALUES (lower(hex(randomblob(16))), ?, ?, ?, ?) 
+            RETURNING id
+            `
+
+	err = tx.QueryRowContext(ctx, query, phrase.PhraseID, phrase.TagName, phrase.TagColor, phrase.CreatedAt.Format(time.RFC3339)).Scan(&phrase.ID)
+	if err != nil {
+		return fmt.Errorf("error with phease tag creation of phraseID %s: %w", phrase.PhraseID, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("committing transaction: %w", err)
+	}
+
+	return nil
+}
+
 func (p *PhraseModel) UpdateTag(ctx context.Context, tag *models.PhraseTag, userID string) error {
 	tx, err := p.DB.BeginTx(ctx, nil)
 	if err != nil {
@@ -112,31 +137,6 @@ func (p *PhraseModel) UpdateTag(ctx context.Context, tag *models.PhraseTag, user
 		return fmt.Errorf("no tag found with id: %s for user: %s", tag.ID, userID)
 	}
 
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("committing transaction: %w", err)
-	}
-
-	return nil
-}
-
-func (p *PhraseModel) CreateTag(ctx context.Context, phrase *models.PhraseTag) error {
-	tx, err := p.DB.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("starting transaction: %w", err)
-	}
-	defer tx.Rollback()
-
-	phrase.CreatedAt = time.Now().UTC()
-	query := `
-            INSERT INTO phrase_tags (id, phraseId, tagName, tagColor, createdAt)
-            VALUES (lower(hex(randomblob(16))), ?, ?, ?, ?) 
-            RETURNING id
-            `
-
-	err = tx.QueryRowContext(ctx, query, phrase.PhraseID, phrase.TagName, phrase.TagColor, phrase.CreatedAt.Format(time.RFC3339)).Scan(&phrase.ID)
-	if err != nil {
-		return fmt.Errorf("error with phease tag creation of phraseID %s: %w", phrase.PhraseID, err)
-	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("committing transaction: %w", err)
 	}
