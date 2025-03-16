@@ -141,6 +141,51 @@ func (p *PhraseHandler) UpdatePhrase(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, data.Phrase)
 }
 
+type updateTagRequest struct {
+	Tag models.PhraseTag `json:"tag"`
+}
+
+func (p *PhraseHandler) UpdateTag(w http.ResponseWriter, r *http.Request) {
+	phraseID := chi.URLParam(r, "phraseID")
+	tagID := chi.URLParam(r, "tagID")
+	if phraseID == "" {
+		http.Error(w, "no phrase id found", http.StatusBadRequest)
+		return
+	}
+	if tagID == "" {
+		http.Error(w, "no tag id found", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	userSession, ok := auth.SessionFromContext(ctx)
+	if !ok {
+		http.Error(w, "no session found", http.StatusInternalServerError)
+		return
+	}
+
+	var data updateTagRequest
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		fmt.Println(err.Error())
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	phraseModel := database.PhraseModel{DB: p.DB}
+	data.Tag.ID = tagID
+	data.Tag.PhraseID = phraseID
+
+	err := phraseModel.UpdateTag(ctx, &data.Tag, userSession.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, data.Tag)
+}
+
 type getPhraseByIDRequest struct {
 	ID string `json:"id"`
 }

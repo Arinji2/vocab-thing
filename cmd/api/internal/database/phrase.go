@@ -78,6 +78,47 @@ func (p *PhraseModel) UpdatePhrase(ctx context.Context, phrase *models.Phrase, u
 	return nil
 }
 
+func (p *PhraseModel) UpdateTag(ctx context.Context, tag *models.PhraseTag, userID string) error {
+	tx, err := p.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("starting transaction: %w", err)
+	}
+	defer tx.Rollback()
+	tag.CreatedAt = time.Now().UTC()
+	query := `
+    UPDATE phrase_tags 
+    SET tagName = ?, tagColor = ?
+    WHERE id = ? AND phraseId = ?
+    AND EXISTS (
+      SELECT 1 FROM phrases 
+      WHERE phrases.id = ? 
+      AND phrases.userId = ?
+    );
+                `
+
+	res, err := tx.ExecContext(ctx, query,
+		tag.TagName, tag.TagColor, tag.ID, tag.PhraseID,
+		tag.PhraseID, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("error updating tag (id: %s, phraseId: %s, userId: %s): %w", tag.ID, tag.PhraseID, userID, err)
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error checking affected rows: %w", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("no tag found with id: %s for user: %s", tag.ID, userID)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("committing transaction: %w", err)
+	}
+
+	return nil
+}
+
 func (p *PhraseModel) CreateTag(ctx context.Context, phrase *models.PhraseTag) error {
 	tx, err := p.DB.BeginTx(ctx, nil)
 	if err != nil {

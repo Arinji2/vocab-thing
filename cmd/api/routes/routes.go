@@ -44,6 +44,7 @@ func RegisterRoutes(db *sql.DB) http.Handler {
 			})
 			r.Get("/{id}", phraseHandler.GetPhraseByID)
 			r.Put("/{id}", phraseHandler.UpdatePhrase)
+			r.Put("/{phraseID}/tag/{tagID}", phraseHandler.UpdateTag)
 
 			r.With(httpmiddleware.Paginate).Get("/", phraseHandler.GetAllPhrases)
 			r.With(httpmiddleware.Searching).Get("/search", phraseHandler.SearchPhrases)
