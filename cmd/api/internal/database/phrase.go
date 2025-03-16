@@ -78,6 +78,37 @@ func (p *PhraseModel) UpdatePhrase(ctx context.Context, phrase *models.Phrase, u
 	return nil
 }
 
+func (p *PhraseModel) DeletePhrase(ctx context.Context, phraseID, userID string) error {
+	tx, err := p.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("starting transaction: %w", err)
+	}
+
+	defer tx.Rollback()
+	query := `
+            DELETE FROM phrases WHERE id = ? AND userId = ?
+            `
+
+	res, err := tx.ExecContext(ctx, query, phraseID, userID)
+	if err != nil {
+		return fmt.Errorf("error deleting phrase (id: %s, userID: %s): %w", phraseID, userID, err)
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error checking affected rows: %w", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("no phrase deleted with id: %s for user: %s", phraseID, userID)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("committing transaction: %w", err)
+	}
+
+	return nil
+}
+
 func (p *PhraseModel) CreateTag(ctx context.Context, phrase *models.PhraseTag) error {
 	tx, err := p.DB.BeginTx(ctx, nil)
 	if err != nil {
@@ -135,6 +166,45 @@ func (p *PhraseModel) UpdateTag(ctx context.Context, tag *models.PhraseTag, user
 	}
 	if rowsAffected == 0 {
 		return fmt.Errorf("no tag found with id: %s for user: %s", tag.ID, userID)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("committing transaction: %w", err)
+	}
+
+	return nil
+}
+
+func (p *PhraseModel) DeleteTag(ctx context.Context, phraseID, tagID, userID string) error {
+	tx, err := p.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("starting transaction: %w", err)
+	}
+
+	defer tx.Rollback()
+	query := `
+DELETE FROM phrase_tags 
+		WHERE id = ? 
+    AND phraseId = ? 
+		AND EXISTS (
+			SELECT 1 FROM phrases 
+			WHERE phrases.id = phrase_tags.phraseId 
+			AND phrases.id = ? 
+			AND phrases.userId = ?
+		);
+	`
+
+	res, err := tx.ExecContext(ctx, query, tagID, phraseID, phraseID, userID)
+	if err != nil {
+		return fmt.Errorf("error deleting tag (id: %s, phraseID: %s,  userID: %s): %w", tagID, phraseID, userID, err)
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error checking affected rows: %w", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("no tag deleted with id: %s for user: %s", tagID, userID)
 	}
 
 	if err := tx.Commit(); err != nil {

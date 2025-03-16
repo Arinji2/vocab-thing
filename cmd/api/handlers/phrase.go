@@ -258,3 +258,62 @@ func (p *PhraseHandler) SearchPhrases(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, responseData)
 }
+
+func (p *PhraseHandler) DeletePhrase(w http.ResponseWriter, r *http.Request) {
+	phraseID := chi.URLParam(r, "id")
+	if phraseID == "" {
+		http.Error(w, "no phrase id found", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	userSession, ok := auth.SessionFromContext(ctx)
+	if !ok {
+		http.Error(w, "no session found", http.StatusInternalServerError)
+		return
+	}
+
+	phraseModel := database.PhraseModel{DB: p.DB}
+
+	err := phraseModel.DeletePhrase(ctx, phraseID, userSession.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (p *PhraseHandler) DeleteTag(w http.ResponseWriter, r *http.Request) {
+	phraseID := chi.URLParam(r, "phraseID")
+	tagID := chi.URLParam(r, "tagID")
+	if phraseID == "" {
+		http.Error(w, "no phrase id found", http.StatusBadRequest)
+		return
+	}
+	if tagID == "" {
+		http.Error(w, "no tag id found", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	userSession, ok := auth.SessionFromContext(ctx)
+	if !ok {
+		http.Error(w, "no session found", http.StatusInternalServerError)
+		return
+	}
+
+	phraseModel := database.PhraseModel{DB: p.DB}
+
+	err := phraseModel.DeleteTag(ctx, phraseID, tagID, userSession.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
