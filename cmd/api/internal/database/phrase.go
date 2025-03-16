@@ -463,10 +463,11 @@ func (p *PhraseModel) Search(ctx context.Context, searchTerm, userID string) ([]
 }
 
 type Scanner interface {
+type scanner interface {
 	Scan(dest ...any) error
 }
 
-func scanTaggedPhrase(scanner Scanner) (models.Phrase, *models.PhraseTag, error) {
+func scanTaggedPhrase(scanner scanner) (models.Phrase, *models.PhraseTag, error) {
 	var phrase models.Phrase
 	var phraseCreatedAtStr string
 	var tagID, tagPhraseID, tagName, tagColor, tagCreatedAtStr sql.NullString
