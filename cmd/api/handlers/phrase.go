@@ -107,7 +107,7 @@ type updatePhraseRequest struct {
 	Phrase models.Phrase `json:"phrase"`
 }
 
-func (p *PhraseHandler) UpdateTag(w http.ResponseWriter, r *http.Request) {
+func (p *PhraseHandler) UpdatePhrase(w http.ResponseWriter, r *http.Request) {
 	phraseID := chi.URLParam(r, "id")
 	if phraseID == "" {
 		http.Error(w, "no phrase id found", http.StatusBadRequest)
