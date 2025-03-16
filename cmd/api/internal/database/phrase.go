@@ -41,6 +41,43 @@ func (p *PhraseModel) CreatePhrase(ctx context.Context, phrase *models.Phrase) e
 	return nil
 }
 
+func (p *PhraseModel) UpdatePhrase(ctx context.Context, phrase *models.Phrase, userID string) error {
+	tx, err := p.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("starting transaction: %w", err)
+	}
+
+	defer tx.Rollback()
+	phrase.CreatedAt = time.Now().UTC()
+	query := `
+            UPDATE phrases SET phrase = ?, phraseDefinition = ?, pinned = ?, foundIn = ?, public = ?, usageCount = ?
+            WHERE id = ? AND userId = ?
+            `
+
+	res, err := tx.ExecContext(ctx, query,
+		phrase.Phrase, phrase.PhraseDefinition, phrase.Pinned,
+		phrase.FoundIn, phrase.Public, phrase.UsageCount,
+		phrase.ID, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("error updating phrase (id: %s, userID: %s): %w", phrase.ID, phrase.UserID, err)
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error checking affected rows: %w", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("no phrase found with id: %s for user: %s", phrase.ID, userID)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("committing transaction: %w", err)
+	}
+
+	return nil
+}
+
 func (p *PhraseModel) CreateTag(ctx context.Context, phrase *models.PhraseTag) error {
 	tx, err := p.DB.BeginTx(ctx, nil)
 	if err != nil {
