@@ -17,6 +17,7 @@ import (
 type PhraseHandler struct {
 	*Handler
 }
+
 type createPhraseRequest struct {
 	Phrase     string `json:"phrase"`
 	Definition string `json:"definition"`
@@ -103,6 +104,79 @@ func (p *PhraseHandler) CreateTag(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, tagData)
 }
 
+type getPhraseByIDRequest struct {
+	ID string `json:"id"`
+}
+
+func (p *PhraseHandler) GetPhraseByID(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	userSession, ok := auth.SessionFromContext(ctx)
+	if !ok {
+		http.Error(w, "no session found", http.StatusInternalServerError)
+		return
+	}
+	phraseID := chi.URLParam(r, "id")
+
+	phraseModel := database.PhraseModel{DB: p.DB}
+	responseData, err := phraseModel.ByID(ctx, phraseID, userSession.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, responseData)
+}
+
+func (p *PhraseHandler) GetAllPhrases(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	userSession, ok := auth.SessionFromContext(ctx)
+	if !ok {
+		http.Error(w, "no session found", http.StatusInternalServerError)
+		return
+	}
+	paginationData, exists := httpmiddleware.PaginationFromContext(ctx)
+	if !exists {
+		http.Error(w, "no pagination data found", http.StatusInternalServerError)
+		return
+	}
+	phraseModel := database.PhraseModel{DB: p.DB}
+	responseData, err := phraseModel.All(ctx, paginationData.Page, paginationData.PageSize, paginationData.Sorting.SortBy, paginationData.Sorting.Order, paginationData.Sorting.GroupBy, userSession.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, responseData)
+}
+
+func (p *PhraseHandler) SearchPhrases(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	userSession, ok := auth.SessionFromContext(ctx)
+	if !ok {
+		http.Error(w, "no session found", http.StatusInternalServerError)
+		return
+	}
+	searchingData, exists := httpmiddleware.SearchingFromContext(ctx)
+	if !exists {
+		http.Error(w, "no searching data found", http.StatusInternalServerError)
+		return
+	}
+	phraseModel := database.PhraseModel{DB: p.DB}
+	responseData, err := phraseModel.Search(ctx, searchingData.Term, userSession.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, responseData)
+}
+
 type updatePhraseRequest struct {
 	Phrase models.Phrase `json:"phrase"`
 }
@@ -184,79 +258,6 @@ func (p *PhraseHandler) UpdateTag(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, data.Tag)
-}
-
-type getPhraseByIDRequest struct {
-	ID string `json:"id"`
-}
-
-func (p *PhraseHandler) GetPhraseByID(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
-
-	userSession, ok := auth.SessionFromContext(ctx)
-	if !ok {
-		http.Error(w, "no session found", http.StatusInternalServerError)
-		return
-	}
-	phraseID := chi.URLParam(r, "id")
-
-	phraseModel := database.PhraseModel{DB: p.DB}
-	responseData, err := phraseModel.ByID(ctx, phraseID, userSession.UserID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	writeJSON(w, http.StatusOK, responseData)
-}
-
-func (p *PhraseHandler) GetAllPhrases(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
-
-	userSession, ok := auth.SessionFromContext(ctx)
-	if !ok {
-		http.Error(w, "no session found", http.StatusInternalServerError)
-		return
-	}
-	paginationData, exists := httpmiddleware.PaginationFromContext(ctx)
-	if !exists {
-		http.Error(w, "no pagination data found", http.StatusInternalServerError)
-		return
-	}
-	phraseModel := database.PhraseModel{DB: p.DB}
-	responseData, err := phraseModel.All(ctx, paginationData.Page, paginationData.PageSize, paginationData.Sorting.SortBy, paginationData.Sorting.Order, paginationData.Sorting.GroupBy, userSession.UserID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	writeJSON(w, http.StatusOK, responseData)
-}
-
-func (p *PhraseHandler) SearchPhrases(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
-
-	userSession, ok := auth.SessionFromContext(ctx)
-	if !ok {
-		http.Error(w, "no session found", http.StatusInternalServerError)
-		return
-	}
-	searchingData, exists := httpmiddleware.SearchingFromContext(ctx)
-	if !exists {
-		http.Error(w, "no searching data found", http.StatusInternalServerError)
-		return
-	}
-	phraseModel := database.PhraseModel{DB: p.DB}
-	responseData, err := phraseModel.Search(ctx, searchingData.Term, userSession.UserID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	writeJSON(w, http.StatusOK, responseData)
 }
 
 func (p *PhraseHandler) DeletePhrase(w http.ResponseWriter, r *http.Request) {

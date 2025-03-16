@@ -43,13 +43,14 @@ func RegisterRoutes(db *sql.DB) http.Handler {
 				r.Post("/tag", phraseHandler.CreateTag)
 			})
 			r.Get("/{id}", phraseHandler.GetPhraseByID)
-			r.Put("/{id}", phraseHandler.UpdatePhrase)
-			r.Delete("/{id}", phraseHandler.DeletePhrase)
-			r.Put("/{phraseID}/tag/{tagID}", phraseHandler.UpdateTag)
-			r.Delete("/{phraseID}/tag/{tagID}", phraseHandler.DeleteTag)
-
 			r.With(httpmiddleware.Paginate).Get("/", phraseHandler.GetAllPhrases)
 			r.With(httpmiddleware.Searching).Get("/search", phraseHandler.SearchPhrases)
+
+			r.Put("/{id}", phraseHandler.UpdatePhrase)
+			r.Put("/{phraseID}/tag/{tagID}", phraseHandler.UpdateTag)
+
+			r.Delete("/{id}", phraseHandler.DeletePhrase)
+			r.Delete("/{phraseID}/tag/{tagID}", phraseHandler.DeleteTag)
 		})
 	})
 
