@@ -15,6 +15,7 @@ func RegisterRoutes(db *sql.DB) http.Handler {
 	handler := handlers.NewHandler(db)
 	userHandler := handlers.UserHandler{Handler: handler}
 	phraseHandler := handlers.PhraseHandler{Handler: handler}
+	syncHandler := handlers.SyncHandler{Handler: handler}
 
 	r := chi.NewRouter()
 
@@ -36,7 +37,10 @@ func RegisterRoutes(db *sql.DB) http.Handler {
 	r.Group(func(r chi.Router) {
 		r.Use(httpmiddleware.Authentication(db))
 		r.Get("/user/authenticated", userHandler.AuthenticatedRoute)
-
+		r.Route("/sync", func(r chi.Router) {
+			r.Get("/", syncHandler.GetSync)
+			r.Post("/", syncHandler.ManualSync)
+		})
 		r.Route("/phrase", func(r chi.Router) {
 			r.Route("/create", func(r chi.Router) {
 				r.Post("/phrase", phraseHandler.CreatePhrase)
