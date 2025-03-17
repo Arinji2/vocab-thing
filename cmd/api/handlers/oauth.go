@@ -90,6 +90,8 @@ func (h *UserHandler) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = userModel.Create(ctx, user)
+			sessionModel := database.SyncModel{DB: h.DB}
+			sessionModel.CreateSync(ctx, user.ID)
 		}
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

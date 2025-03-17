@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -54,6 +55,13 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	err := userModel.Create(ctx, &userData)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	syncModel := database.SyncModel{DB: h.DB}
+	err = syncModel.CreateSync(ctx, userData.ID)
+	if err != nil {
+		fmt.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -109,7 +117,16 @@ func (h *UserHandler) CreateGuestUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	syncModel := database.SyncModel{DB: h.DB}
+	err = syncModel.CreateSync(ctx, user.ID)
+	if err != nil {
+		fmt.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	auth.CreateUserSessionCookie(w, userSession.ID, userSession.ExpiresAt)
+
 	w.WriteHeader(http.StatusOK)
 }
 
