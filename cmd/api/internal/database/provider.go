@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
+	"github.com/arinji2/vocab-thing/internal/errorcode"
 	"github.com/arinji2/vocab-thing/internal/models"
 	"github.com/arinji2/vocab-thing/internal/utils"
 )
@@ -17,7 +19,8 @@ type ProviderModel struct {
 func (p *ProviderModel) Create(ctx context.Context, provider *models.OauthProvider) error {
 	tx, err := p.DB.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("starting transaction: %w", err)
+		log.Printf("starting transaction: %s", err.Error())
+		return errorcode.ErrTransactionStart
 	}
 	defer tx.Rollback()
 	query := `INSERT INTO providers (id, userId, type, refreshToken, accessToken, expiresAt)
@@ -25,10 +28,13 @@ func (p *ProviderModel) Create(ctx context.Context, provider *models.OauthProvid
 
 	err = tx.QueryRowContext(ctx, query, provider.UserID, provider.Type, provider.RefreshToken, provider.AccessToken, provider.ExpiresAt.Format(time.RFC3339)).Scan(&provider.ID)
 	if err != nil {
-		return fmt.Errorf("error with provider creation of userID %s and provider type %s: %w", provider.UserID, provider.Type, err)
+		log.Printf("error with provider creation of userID %s and provider type %s: %s", provider.UserID, provider.Type, err.Error())
+		return errorcode.ErrProviderCreate
+
 	}
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("committing transaction: %w", err)
+		log.Printf("committing transaction: %s", err.Error())
+		return errorcode.ErrTransactionCommit
 	}
 
 	return nil
@@ -39,7 +45,8 @@ func (p *ProviderModel) ByUserID(ctx context.Context, id string) ([]models.Oauth
 
 	rows, err := p.DB.QueryContext(ctx, query, id)
 	if err != nil {
-		return nil, fmt.Errorf("querying providers: %w", err)
+		log.Printf("querying providers: %s", err.Error())
+		return nil, errorcode.ErrProviderQuery
 	}
 	defer rows.Close()
 
@@ -59,7 +66,8 @@ func (p *ProviderModel) ByUserID(ctx context.Context, id string) ([]models.Oauth
 			&createdAtStr,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("scanning provider row: %w", err)
+			log.Printf("scanning provider row: %s", err.Error())
+			return nil, errorcode.ErrScanningRow
 		}
 
 		provider.CreatedAt, _ = utils.StringToTime(createdAtStr, fmt.Sprintf("Warning: could not parse createdAt '%s' for provider %s", createdAtStr, provider.ID))
@@ -69,11 +77,13 @@ func (p *ProviderModel) ByUserID(ctx context.Context, id string) ([]models.Oauth
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterating provider rows: %w", err)
+		log.Printf("iterating provider rows: %s", err.Error())
+		return nil, errorcode.ErrIteratingRows
 	}
 
 	if len(providers) == 0 {
-		return nil, fmt.Errorf("no providers found for userID %s: %w", id, sql.ErrNoRows)
+		log.Printf("no providers found for userID %s: %s", id, sql.ErrNoRows)
+		return nil, sql.ErrNoRows
 	}
 
 	return providers, nil
