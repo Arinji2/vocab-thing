@@ -4,9 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/arinji2/vocab-thing/internal/auth"
+	"github.com/arinji2/vocab-thing/internal/errorcode"
 	"github.com/arinji2/vocab-thing/internal/models"
 	"github.com/arinji2/vocab-thing/internal/utils"
 )
@@ -18,7 +20,8 @@ type SessionModel struct {
 func (m *SessionModel) Create(ctx context.Context, session *models.Session) error {
 	tx, err := m.DB.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("starting transaction: %w", err)
+		log.Printf("starting transaction: %s", err.Error())
+		return errorcode.ErrTransactionStart
 	}
 	defer tx.Rollback()
 
@@ -28,10 +31,12 @@ func (m *SessionModel) Create(ctx context.Context, session *models.Session) erro
 
 	err = tx.QueryRowContext(ctx, query, session.UserID, session.ProviderID, session.Fingerprint, session.IP, session.ExpiresAt.Format(time.RFC3339)).Scan(&session.ID)
 	if err != nil {
-		return fmt.Errorf("error with session creation of userID %s: %w", session.ID, err)
+		log.Printf("error with session creation of userID %s: %s", session.ID, err.Error())
+		return errorcode.ErrSessionCreate
 	}
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("committing transaction: %w", err)
+		log.Printf("committing transaction: %s", err.Error())
+		return errorcode.ErrTransactionCommit
 	}
 
 	return nil
@@ -42,7 +47,8 @@ func (m *SessionModel) ByUserID(ctx context.Context, id string) ([]models.Sessio
 
 	rows, err := m.DB.QueryContext(ctx, query, id)
 	if err != nil {
-		return nil, fmt.Errorf("querying sessions: %w", err)
+		log.Printf("querying sessions: %s", err.Error())
+		return nil, errorcode.ErrSessionQuery
 	}
 	defer rows.Close()
 
@@ -62,7 +68,8 @@ func (m *SessionModel) ByUserID(ctx context.Context, id string) ([]models.Sessio
 			&session.CreatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("scanning session row: %w", err)
+			log.Printf("scanning session row: %s", err.Error())
+			return nil, errorcode.ErrScanningRow
 		}
 
 		session.CreatedAt, _ = utils.StringToTime(createdAtStr, fmt.Sprintf("Warning: could not parse createdAt '%s' for session %s", createdAtStr, session.ID))
@@ -72,11 +79,13 @@ func (m *SessionModel) ByUserID(ctx context.Context, id string) ([]models.Sessio
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterating provider rows: %w", err)
+		log.Printf("iterating provider rows: %s", err.Error())
+		return nil, errorcode.ErrIteratingRows
 	}
 
 	if len(sessions) == 0 {
-		return nil, fmt.Errorf("no sessions found for userID %s: %w", id, sql.ErrNoRows)
+		log.Printf("no sessions found for userID %s: %s", id, sql.ErrNoRows)
+		return nil, sql.ErrNoRows
 	}
 
 	return sessions, nil
@@ -90,7 +99,8 @@ func (m *SessionModel) ByUserIDWithProvider(ctx context.Context, id string) ([]m
 
 	rows, err := m.DB.QueryContext(ctx, query, id)
 	if err != nil {
-		return nil, fmt.Errorf("querying sessions with provider: %w", err)
+		log.Printf("querying sessions with provider: %s", err.Error())
+		return nil, errorcode.ErrSessionQuery
 	}
 	defer rows.Close()
 
@@ -110,7 +120,8 @@ func (m *SessionModel) ByUserIDWithProvider(ctx context.Context, id string) ([]m
 			&session.CreatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("scanning session row: %w", err)
+			log.Printf("scanning session row: %s", err.Error())
+			return nil, errorcode.ErrScanningRow
 		}
 
 		session.CreatedAt, _ = utils.StringToTime(createdAtStr, "")
@@ -119,7 +130,8 @@ func (m *SessionModel) ByUserIDWithProvider(ctx context.Context, id string) ([]m
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterating session rows: %w", err)
+		log.Printf("iterating session rows: %s", err.Error())
+		return nil, errorcode.ErrIteratingRows
 	}
 
 	if len(sessions) == 0 {
@@ -140,14 +152,15 @@ func (m *SessionModel) Validate(ctx context.Context, sessionID string) (models.S
 	err := row.Scan(&session.ID, &session.UserID, &expiresAtStr)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return models.Session{}, fmt.Errorf("session not found with id %s: %w", sessionID, err)
+			return models.Session{}, errorcode.ErrNoSession
 		}
-		return models.Session{}, fmt.Errorf("scanning session row: %w", err)
+		log.Printf("scanning session row: %s", err.Error())
+		return models.Session{}, errorcode.ErrScanningRow
 	}
 
 	parsedTime, err := utils.StringToTime(expiresAtStr, fmt.Sprintf("Warning: could not parse expiresAt '%s' for session %s", expiresAtStr, sessionID))
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Printf("could not parse expiresAt '%s' for session %s: %s", expiresAtStr, sessionID, err.Error())
 	}
 	session.ExpiresAt = parsedTime
 	if session.ExpiresAt.Before(time.Now()) {
