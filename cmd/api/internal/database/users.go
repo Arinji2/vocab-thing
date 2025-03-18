@@ -3,9 +3,10 @@ package database
 import (
 	"context"
 	"database/sql"
-	"fmt"
+	"log"
 	"time"
 
+	"github.com/arinji2/vocab-thing/internal/errorcode"
 	"github.com/arinji2/vocab-thing/internal/models"
 	"github.com/arinji2/vocab-thing/internal/utils"
 )
@@ -19,7 +20,8 @@ func (m *UserModel) GetAll(ctx context.Context) ([]models.User, error) {
 
 	rows, err := m.DB.QueryContext(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("querying users: %w", err)
+		log.Printf("querying users: %s", err.Error())
+		return nil, errorcode.ErrUserQuery
 	}
 	defer rows.Close()
 
@@ -31,11 +33,14 @@ func (m *UserModel) GetAll(ctx context.Context) ([]models.User, error) {
 
 		err := rows.Scan(&user.ID, &user.Username, &user.Email, &createdAtStr)
 		if err != nil {
-			return nil, fmt.Errorf("scanning user row: %w", err)
+			log.Printf("scanning user row: %s", err.Error())
+			return nil, errorcode.ErrScanningRow
 		}
-		parsedTime, err := utils.StringToTime(createdAtStr, fmt.Sprintf("Warning: could not parse createdAt '%s' for user %s", createdAtStr, user.ID))
+
+		parsedTime, err := utils.StringToTime(createdAtStr)
 		if err != nil {
-			fmt.Println(err.Error())
+			log.Printf("Warning: could not parse createdAt '%s' for user %s", createdAtStr, user.ID)
+			parsedTime = time.Now().UTC()
 		}
 		user.CreatedAt = parsedTime
 
@@ -43,7 +48,8 @@ func (m *UserModel) GetAll(ctx context.Context) ([]models.User, error) {
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterating user rows: %w", err)
+		log.Printf("iterating user rows: %s", err.Error())
+		return nil, errorcode.ErrIteratingRows
 	}
 
 	return users, nil
@@ -60,15 +66,19 @@ func (m *UserModel) ByID(ctx context.Context, id string) (models.User, error) {
 	err := row.Scan(&user.ID, &user.Username, &user.Email, &createdAtStr)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return models.User{}, fmt.Errorf("user not found with id %s: %w", id, err)
+			log.Printf("user not found with id %s: %s", id, err.Error())
+			return models.User{}, errorcode.ErrUserQuery
 		}
-		return models.User{}, fmt.Errorf("scanning user row: %w", err)
+		log.Printf("scanning user row: %s", err.Error())
+		return models.User{}, errorcode.ErrScanningRow
 	}
 
-	parsedTime, err := utils.StringToTime(createdAtStr, fmt.Sprintf("Warning: could not parse createdAt '%s' for user %s", createdAtStr, user.ID))
+	parsedTime, err := utils.StringToTime(createdAtStr)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Printf("Warning: could not parse createdAt '%s' for user %s", createdAtStr, user.ID)
+		parsedTime = time.Now().UTC()
 	}
+
 	user.CreatedAt = parsedTime
 
 	return user, nil
@@ -85,14 +95,17 @@ func (m *UserModel) ByUsername(ctx context.Context, username string) (models.Use
 	err := row.Scan(&user.ID, &user.Username, &user.Email, &createdAtStr)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return models.User{}, fmt.Errorf("user not found with username %s: %w", username, err)
+			log.Printf("user not found with username %s: %s", username, err.Error())
+			return models.User{}, errorcode.ErrUserQuery
 		}
-		return models.User{}, fmt.Errorf("scanning user row: %w", err)
+		log.Printf("scanning user row: %s", err.Error())
+		return models.User{}, errorcode.ErrScanningRow
 	}
 
-	parsedTime, err := utils.StringToTime(createdAtStr, fmt.Sprintf("Warning: could not parse createdAt '%s' for user %s", createdAtStr, user.ID))
+	parsedTime, err := utils.StringToTime(createdAtStr)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Printf("could not parse createdAt '%s' for user %s: %s", createdAtStr, user.ID, err.Error())
+		parsedTime = time.Now().UTC()
 	}
 	user.CreatedAt = parsedTime
 
@@ -110,14 +123,17 @@ func (m *UserModel) ByEmail(ctx context.Context, email string) (models.User, err
 	err := row.Scan(&user.ID, &user.Username, &user.Email, &createdAtStr)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return models.User{}, fmt.Errorf("user not found with email %s: %w", email, err)
+			log.Printf("user not found with email %s: %s", email, err.Error())
+			return models.User{}, errorcode.ErrUserQuery
 		}
-		return models.User{}, fmt.Errorf("scanning user row: %w", err)
+		log.Printf("scanning user row: %s", err.Error())
+		return models.User{}, errorcode.ErrScanningRow
 	}
 
-	parsedTime, err := utils.StringToTime(createdAtStr, fmt.Sprintf("Warning: could not parse createdAt '%s' for user %s", createdAtStr, user.ID))
+	parsedTime, err := utils.StringToTime(createdAtStr)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Printf("Warning: could not parse createdAt '%s' for user %s", createdAtStr, user.ID)
+		parsedTime = time.Now().UTC()
 	}
 	user.CreatedAt = parsedTime
 
@@ -127,7 +143,8 @@ func (m *UserModel) ByEmail(ctx context.Context, email string) (models.User, err
 func (m *UserModel) Create(ctx context.Context, user *models.User) error {
 	tx, err := m.DB.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("starting transaction: %w", err)
+		log.Printf("starting transaction: %s", err.Error())
+		return errorcode.ErrTransactionStart
 	}
 	defer tx.Rollback()
 
@@ -137,11 +154,13 @@ func (m *UserModel) Create(ctx context.Context, user *models.User) error {
 
 	err = tx.QueryRowContext(ctx, query, user.Username, user.Email, user.CreatedAt.Format(time.RFC3339)).Scan(&user.ID)
 	if err != nil {
-		return fmt.Errorf("error with user creation of username %s: %w", user.Username, err)
+		log.Printf("error with user creation of username %s: %s", user.Username, err.Error())
+		return errorcode.ErrUserCreate
 	}
 
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("committing transaction: %w", err)
+		log.Printf("committing transaction: %s", err.Error())
+		return errorcode.ErrTransactionCommit
 	}
 
 	return nil
