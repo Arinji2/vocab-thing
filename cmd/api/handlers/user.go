@@ -3,12 +3,12 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/arinji2/vocab-thing/internal/auth"
 	"github.com/arinji2/vocab-thing/internal/database"
+	"github.com/arinji2/vocab-thing/internal/errorcode"
 	"github.com/arinji2/vocab-thing/internal/models"
 	"github.com/arinji2/vocab-thing/internal/oauth"
 	"github.com/davecgh/go-spew/spew"
@@ -25,7 +25,7 @@ func (h *UserHandler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	userModel := database.UserModel{DB: h.DB}
 	users, err := userModel.GetAll(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, err, http.StatusInternalServerError)
 		return
 	}
 	for _, user := range users {
@@ -44,7 +44,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	var data createUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		errorcode.WriteJSONError(w, errorcode.ErrBadRequest, http.StatusBadRequest)
 		return
 	}
 	userModel := database.UserModel{DB: h.DB}
@@ -60,8 +60,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	syncModel := database.SyncModel{DB: h.DB}
 	err = syncModel.CreateSync(ctx, userData.ID)
 	if err != nil {
-		fmt.Println(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -77,14 +76,14 @@ func (h *UserHandler) CreateGuestUser(w http.ResponseWriter, r *http.Request) {
 
 	user, err := provider.FetchGuestUser()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errorcode.WriteJSONError(w, err, http.StatusBadRequest)
 		return
 	}
 	spew.Dump(user)
 	userModel := database.UserModel{DB: h.DB}
 	err = userModel.Create(ctx, user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -99,7 +98,7 @@ func (h *UserHandler) CreateGuestUser(w http.ResponseWriter, r *http.Request) {
 	}
 	err = providerModel.Create(ctx, &userProvider)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -114,15 +113,14 @@ func (h *UserHandler) CreateGuestUser(w http.ResponseWriter, r *http.Request) {
 	}
 	err = sessionModel.Create(ctx, &userSession)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	syncModel := database.SyncModel{DB: h.DB}
 	err = syncModel.CreateSync(ctx, user.ID)
 	if err != nil {
-		fmt.Println(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, err, http.StatusInternalServerError)
 		return
 	}
 	auth.CreateUserSessionCookie(w, userSession.ID, userSession.ExpiresAt)
@@ -134,14 +132,14 @@ func (h *UserHandler) AuthenticatedRoute(w http.ResponseWriter, r *http.Request)
 	ctx := r.Context()
 	userSession, ok := auth.SessionFromContext(ctx)
 	if !ok {
-		http.Error(w, "no session found", http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, errorcode.ErrNoSession, http.StatusInternalServerError)
 		return
 	}
 
 	userModel := database.UserModel{DB: h.DB}
 	user, err := userModel.ByID(ctx, userSession.UserID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, err, http.StatusInternalServerError)
 		return
 	}
 	writeJSON(w, http.StatusOK, user)
