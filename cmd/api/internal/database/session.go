@@ -3,7 +3,6 @@ package database
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 	"time"
 
@@ -32,7 +31,7 @@ func (m *SessionModel) Create(ctx context.Context, session *models.Session) erro
 	err = tx.QueryRowContext(ctx, query, session.UserID, session.ProviderID, session.Fingerprint, session.IP, session.ExpiresAt.Format(time.RFC3339)).Scan(&session.ID)
 	if err != nil {
 		log.Printf("error with session creation of userID %s: %s", session.ID, err.Error())
-		return errorcode.ErrSessionCreate
+		return errorcode.ErrDBCreate
 	}
 	if err := tx.Commit(); err != nil {
 		log.Printf("committing transaction: %s", err.Error())
@@ -48,7 +47,7 @@ func (m *SessionModel) ByUserID(ctx context.Context, id string) ([]models.Sessio
 	rows, err := m.DB.QueryContext(ctx, query, id)
 	if err != nil {
 		log.Printf("querying sessions: %s", err.Error())
-		return nil, errorcode.ErrSessionQuery
+		return nil, errorcode.ErrDBQuery
 	}
 	defer rows.Close()
 
@@ -72,8 +71,16 @@ func (m *SessionModel) ByUserID(ctx context.Context, id string) ([]models.Sessio
 			return nil, errorcode.ErrScanningRow
 		}
 
-		session.CreatedAt, _ = utils.StringToTime(createdAtStr, fmt.Sprintf("Warning: could not parse createdAt '%s' for session %s", createdAtStr, session.ID))
-		session.ExpiresAt, _ = utils.StringToTime(expiresAtStr, fmt.Sprintf("Warning: could not parse expiresAt '%s' for session %s", expiresAtStr, session.ID))
+		session.CreatedAt, err = utils.StringToTime(createdAtStr)
+		if err != nil {
+			log.Printf("Warning: could not parse createdAt '%s' for session %s", createdAtStr, session.ID)
+			session.CreatedAt = time.Now().UTC()
+		}
+		session.ExpiresAt, err = utils.StringToTime(expiresAtStr)
+		if err != nil {
+			log.Printf("Warning: could not parse expiresAt '%s' for session %s", expiresAtStr, session.ID)
+			session.ExpiresAt = time.Now().UTC()
+		}
 
 		sessions = append(sessions, session)
 	}
@@ -100,7 +107,7 @@ func (m *SessionModel) ByUserIDWithProvider(ctx context.Context, id string) ([]m
 	rows, err := m.DB.QueryContext(ctx, query, id)
 	if err != nil {
 		log.Printf("querying sessions with provider: %s", err.Error())
-		return nil, errorcode.ErrSessionQuery
+		return nil, errorcode.ErrDBQuery
 	}
 	defer rows.Close()
 
@@ -124,8 +131,17 @@ func (m *SessionModel) ByUserIDWithProvider(ctx context.Context, id string) ([]m
 			return nil, errorcode.ErrScanningRow
 		}
 
-		session.CreatedAt, _ = utils.StringToTime(createdAtStr, "")
-		session.ExpiresAt, _ = utils.StringToTime(expiresAtStr, "")
+		session.CreatedAt, err = utils.StringToTime(createdAtStr)
+		if err != nil {
+			log.Printf("Warning: could not parse createdAt '%s' for session %s", createdAtStr, session.ID)
+			session.CreatedAt = time.Now().UTC()
+		}
+		session.ExpiresAt, err = utils.StringToTime(expiresAtStr)
+		if err != nil {
+			log.Printf("Warning: could not parse expiresAt '%s' for session %s", expiresAtStr, session.ID)
+			session.ExpiresAt = time.Now().UTC()
+		}
+
 		sessions = append(sessions, session)
 	}
 
@@ -158,11 +174,13 @@ func (m *SessionModel) Validate(ctx context.Context, sessionID string) (models.S
 		return models.Session{}, errorcode.ErrScanningRow
 	}
 
-	parsedTime, err := utils.StringToTime(expiresAtStr, fmt.Sprintf("Warning: could not parse expiresAt '%s' for session %s", expiresAtStr, sessionID))
+	parsedTime, err := utils.StringToTime(expiresAtStr)
 	if err != nil {
 		log.Printf("could not parse expiresAt '%s' for session %s: %s", expiresAtStr, sessionID, err.Error())
+		parsedTime = time.Now().UTC()
 	}
 	session.ExpiresAt = parsedTime
+
 	if session.ExpiresAt.Before(time.Now()) {
 		return models.Session{}, auth.ErrSessionExpired
 	}
