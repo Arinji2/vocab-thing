@@ -2,10 +2,12 @@ package httpmiddleware
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 
 	"github.com/arinji2/vocab-thing/internal/auth"
 	"github.com/arinji2/vocab-thing/internal/database"
+	"github.com/arinji2/vocab-thing/internal/errorcode"
 )
 
 func Authentication(db *sql.DB) func(http.Handler) http.Handler {
@@ -13,7 +15,7 @@ func Authentication(db *sql.DB) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			sessionID, err := auth.GetUserSession(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusUnauthorized)
+				errorcode.WriteJSONError(w, err, http.StatusUnauthorized)
 				return
 			}
 
@@ -24,7 +26,8 @@ func Authentication(db *sql.DB) func(http.Handler) http.Handler {
 				if err == auth.ErrSessionExpired {
 					auth.DeleteUserSessionCookie(w)
 				}
-				http.Error(w, err.Error(), http.StatusUnauthorized)
+				fmt.Println(err.Error())
+				errorcode.WriteJSONError(w, err, http.StatusUnauthorized)
 				return
 			}
 
