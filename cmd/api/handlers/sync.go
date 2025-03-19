@@ -7,6 +7,7 @@ import (
 
 	"github.com/arinji2/vocab-thing/internal/auth"
 	"github.com/arinji2/vocab-thing/internal/database"
+	"github.com/arinji2/vocab-thing/internal/errorcode"
 )
 
 type SyncHandler struct {
@@ -19,14 +20,14 @@ func (s *SyncHandler) GetSync(w http.ResponseWriter, r *http.Request) {
 
 	userSession, ok := auth.SessionFromContext(ctx)
 	if !ok {
-		http.Error(w, "no session found", http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, errorcode.ErrNoSession, http.StatusInternalServerError)
 		return
 	}
 
 	syncModel := database.SyncModel{DB: s.DB}
 	responseData, err := syncModel.ByUserID(ctx, userSession.UserID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errorcode.WriteJSONError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -39,14 +40,14 @@ func (s *SyncHandler) ManualSync(w http.ResponseWriter, r *http.Request) {
 
 	userSession, ok := auth.SessionFromContext(ctx)
 	if !ok {
-		http.Error(w, "no session found", http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, errorcode.ErrNoSession, http.StatusInternalServerError)
 		return
 	}
 
 	syncModel := database.SyncModel{DB: s.DB}
 	responseData, err := syncModel.ManualSync(ctx, userSession.UserID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errorcode.WriteJSONError(w, err, http.StatusBadRequest)
 		return
 	}
 
