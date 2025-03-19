@@ -21,7 +21,7 @@ func (m *UserModel) GetAll(ctx context.Context) ([]models.User, error) {
 	rows, err := m.DB.QueryContext(ctx, query)
 	if err != nil {
 		log.Printf("querying users: %s", err.Error())
-		return nil, errorcode.ErrUserQuery
+		return nil, errorcode.ErrDBQuery
 	}
 	defer rows.Close()
 
@@ -67,7 +67,7 @@ func (m *UserModel) ByID(ctx context.Context, id string) (models.User, error) {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("user not found with id %s: %s", id, err.Error())
-			return models.User{}, errorcode.ErrUserQuery
+			return models.User{}, errorcode.ErrDBQuery
 		}
 		log.Printf("scanning user row: %s", err.Error())
 		return models.User{}, errorcode.ErrScanningRow
@@ -96,7 +96,7 @@ func (m *UserModel) ByUsername(ctx context.Context, username string) (models.Use
 	if err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("user not found with username %s: %s", username, err.Error())
-			return models.User{}, errorcode.ErrUserQuery
+			return models.User{}, errorcode.ErrDBQuery
 		}
 		log.Printf("scanning user row: %s", err.Error())
 		return models.User{}, errorcode.ErrScanningRow
@@ -124,7 +124,7 @@ func (m *UserModel) ByEmail(ctx context.Context, email string) (models.User, err
 	if err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("user not found with email %s: %s", email, err.Error())
-			return models.User{}, errorcode.ErrUserQuery
+			return models.User{}, errorcode.ErrDBQuery
 		}
 		log.Printf("scanning user row: %s", err.Error())
 		return models.User{}, errorcode.ErrScanningRow
@@ -155,7 +155,7 @@ func (m *UserModel) Create(ctx context.Context, user *models.User) error {
 	err = tx.QueryRowContext(ctx, query, user.Username, user.Email, user.CreatedAt.Format(time.RFC3339)).Scan(&user.ID)
 	if err != nil {
 		log.Printf("error with user creation of username %s: %s", user.Username, err.Error())
-		return errorcode.ErrUserCreate
+		return errorcode.ErrDBCreate
 	}
 
 	if err := tx.Commit(); err != nil {
