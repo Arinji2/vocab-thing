@@ -3,6 +3,8 @@ package httpmiddleware
 import (
 	"context"
 	"net/http"
+
+	"github.com/arinji2/vocab-thing/internal/errorcode"
 )
 
 type searchCtxKey struct{}
@@ -18,7 +20,7 @@ func Searching(next http.Handler) http.Handler {
 		searchTerm := query.Get("searchTerm")
 
 		if searchTerm == "" {
-			http.Error(w, "no search term found", http.StatusInternalServerError)
+			errorcode.WriteJSONError(w, errorcode.ErrNoSearchingData, http.StatusInternalServerError)
 			return
 		}
 
