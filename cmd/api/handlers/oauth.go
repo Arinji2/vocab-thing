@@ -5,13 +5,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"slices"
 	"time"
 
 	"github.com/arinji2/vocab-thing/internal/auth"
 	"github.com/arinji2/vocab-thing/internal/database"
+	"github.com/arinji2/vocab-thing/internal/errorcode"
 	"github.com/arinji2/vocab-thing/internal/models"
 	"github.com/arinji2/vocab-thing/internal/oauth"
 )
@@ -26,19 +26,19 @@ func (h *UserHandler) GenerateCodeURL(w http.ResponseWriter, r *http.Request) {
 
 	var data generateCodeURLRequest
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		errorcode.WriteJSONError(w, errorcode.ErrBadRequest, http.StatusBadRequest)
 		return
 	}
 
 	provider, err := oauth.NewProvider(ctx, data.ProviderType)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errorcode.WriteJSONError(w, err, http.StatusBadRequest)
 		return
 	}
 
 	codeURL, err := provider.GenerateCodeURL(r, w)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -63,25 +63,24 @@ func (h *UserHandler) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	var data callbackHandlerRequest
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		errorcode.WriteJSONError(w, errorcode.ErrBadRequest, http.StatusBadRequest)
 		return
 	}
 	provider, err := oauth.NewProvider(ctx, data.ProviderType)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errorcode.WriteJSONError(w, err, http.StatusBadRequest)
 		return
 	}
 
 	p, err := provider.AuthenticateWithCode(r, data.Code, data.State)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errorcode.WriteJSONError(w, err, http.StatusBadRequest)
 		return
 	}
 
 	user, err := provider.FetchAuthUser(p)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errorcode.WriteJSONError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -94,7 +93,7 @@ func (h *UserHandler) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 			sessionModel.CreateSync(ctx, user.ID)
 		}
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			errorcode.WriteJSONError(w, err, http.StatusInternalServerError)
 			return
 		}
 	} else {
@@ -115,7 +114,7 @@ func (h *UserHandler) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			err = providerModel.Create(ctx, &selectedUserProvider)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				errorcode.WriteJSONError(w, err, http.StatusInternalServerError)
 				return
 			}
 		}
@@ -138,7 +137,7 @@ func (h *UserHandler) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			err = providerModel.Create(ctx, &selectedUserProvider)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				errorcode.WriteJSONError(w, err, http.StatusInternalServerError)
 				return
 			}
 		}
@@ -148,7 +147,7 @@ func (h *UserHandler) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	var userSession models.Session
 	existingSessions, err := sessionModel.ByUserIDWithProvider(ctx, user.ID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -171,7 +170,7 @@ func (h *UserHandler) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		err = sessionModel.Create(ctx, &userSession)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			errorcode.WriteJSONError(w, err, http.StatusInternalServerError)
 			return
 		}
 	}
