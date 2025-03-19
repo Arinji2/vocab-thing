@@ -9,6 +9,7 @@ import (
 
 	"github.com/arinji2/vocab-thing/internal/auth"
 	"github.com/arinji2/vocab-thing/internal/database"
+	"github.com/arinji2/vocab-thing/internal/errorcode"
 	"github.com/arinji2/vocab-thing/internal/httpmiddleware"
 	"github.com/arinji2/vocab-thing/internal/models"
 	"github.com/go-chi/chi/v5"
@@ -31,14 +32,13 @@ func (p *PhraseHandler) CreatePhrase(w http.ResponseWriter, r *http.Request) {
 
 	userSession, ok := auth.SessionFromContext(ctx)
 	if !ok {
-		http.Error(w, "no session found", http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, errorcode.ErrNoSession, http.StatusInternalServerError)
 		return
 	}
 
 	var data createPhraseRequest
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		fmt.Println(err.Error())
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		errorcode.WriteJSONError(w, errorcode.ErrBadRequest, http.StatusBadRequest)
 		return
 	}
 	phraseModel := database.PhraseModel{DB: p.DB}
@@ -52,7 +52,7 @@ func (p *PhraseHandler) CreatePhrase(w http.ResponseWriter, r *http.Request) {
 	}
 	err := phraseModel.CreatePhrase(ctx, &phraseData)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errorcode.WriteJSONError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -71,21 +71,21 @@ func (p *PhraseHandler) CreateTag(w http.ResponseWriter, r *http.Request) {
 
 	userSession, ok := auth.SessionFromContext(ctx)
 	if !ok {
-		http.Error(w, "no session found", http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, errorcode.ErrNoSession, http.StatusInternalServerError)
 		return
 	}
 
 	var data createPhraseTagRequest
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		fmt.Println(err.Error())
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		errorcode.WriteJSONError(w, errorcode.ErrBadRequest, http.StatusBadRequest)
 		return
 	}
 	phraseModel := database.PhraseModel{DB: p.DB}
 
 	verifiedData, err := phraseModel.ByID(ctx, data.PhraseID, userSession.UserID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errorcode.WriteJSONError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -97,7 +97,7 @@ func (p *PhraseHandler) CreateTag(w http.ResponseWriter, r *http.Request) {
 	}
 	err = phraseModel.CreateTag(ctx, &tagData)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errorcode.WriteJSONError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -114,7 +114,7 @@ func (p *PhraseHandler) GetPhraseByID(w http.ResponseWriter, r *http.Request) {
 
 	userSession, ok := auth.SessionFromContext(ctx)
 	if !ok {
-		http.Error(w, "no session found", http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, errorcode.ErrNoSession, http.StatusInternalServerError)
 		return
 	}
 	phraseID := chi.URLParam(r, "id")
@@ -122,7 +122,7 @@ func (p *PhraseHandler) GetPhraseByID(w http.ResponseWriter, r *http.Request) {
 	phraseModel := database.PhraseModel{DB: p.DB}
 	responseData, err := phraseModel.ByID(ctx, phraseID, userSession.UserID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errorcode.WriteJSONError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -135,18 +135,18 @@ func (p *PhraseHandler) GetAllPhrases(w http.ResponseWriter, r *http.Request) {
 
 	userSession, ok := auth.SessionFromContext(ctx)
 	if !ok {
-		http.Error(w, "no session found", http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, errorcode.ErrNoSession, http.StatusInternalServerError)
 		return
 	}
 	paginationData, exists := httpmiddleware.PaginationFromContext(ctx)
 	if !exists {
-		http.Error(w, "no pagination data found", http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, errorcode.ErrNoPaginationData, http.StatusInternalServerError)
 		return
 	}
 	phraseModel := database.PhraseModel{DB: p.DB}
 	responseData, err := phraseModel.All(ctx, paginationData.Page, paginationData.PageSize, paginationData.Sorting.SortBy, paginationData.Sorting.Order, paginationData.Sorting.GroupBy, userSession.UserID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errorcode.WriteJSONError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -159,18 +159,18 @@ func (p *PhraseHandler) SearchPhrases(w http.ResponseWriter, r *http.Request) {
 
 	userSession, ok := auth.SessionFromContext(ctx)
 	if !ok {
-		http.Error(w, "no session found", http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, errorcode.ErrNoSession, http.StatusInternalServerError)
 		return
 	}
 	searchingData, exists := httpmiddleware.SearchingFromContext(ctx)
 	if !exists {
-		http.Error(w, "no searching data found", http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, errorcode.ErrNoSearchingData, http.StatusInternalServerError)
 		return
 	}
 	phraseModel := database.PhraseModel{DB: p.DB}
 	responseData, err := phraseModel.Search(ctx, searchingData.Term, userSession.UserID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errorcode.WriteJSONError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -184,7 +184,7 @@ type updatePhraseRequest struct {
 func (p *PhraseHandler) UpdatePhrase(w http.ResponseWriter, r *http.Request) {
 	phraseID := chi.URLParam(r, "id")
 	if phraseID == "" {
-		http.Error(w, "no phrase id found", http.StatusBadRequest)
+		errorcode.WriteJSONError(w, errorcode.ErrBadRequest.WithDetails(map[string]string{"missing": "phraseID"}), http.StatusBadRequest)
 		return
 	}
 
@@ -193,14 +193,14 @@ func (p *PhraseHandler) UpdatePhrase(w http.ResponseWriter, r *http.Request) {
 
 	userSession, ok := auth.SessionFromContext(ctx)
 	if !ok {
-		http.Error(w, "no session found", http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, errorcode.ErrNoSession, http.StatusInternalServerError)
 		return
 	}
 
 	var data updatePhraseRequest
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		fmt.Println(err.Error())
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		errorcode.WriteJSONError(w, errorcode.ErrBadRequest, http.StatusBadRequest)
 		return
 	}
 	phraseModel := database.PhraseModel{DB: p.DB}
@@ -208,7 +208,7 @@ func (p *PhraseHandler) UpdatePhrase(w http.ResponseWriter, r *http.Request) {
 
 	err := phraseModel.UpdatePhrase(ctx, &data.Phrase, userSession.UserID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errorcode.WriteJSONError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -223,11 +223,11 @@ func (p *PhraseHandler) UpdateTag(w http.ResponseWriter, r *http.Request) {
 	phraseID := chi.URLParam(r, "phraseID")
 	tagID := chi.URLParam(r, "tagID")
 	if phraseID == "" {
-		http.Error(w, "no phrase id found", http.StatusBadRequest)
+		errorcode.WriteJSONError(w, errorcode.ErrBadRequest.WithDetails(map[string]string{"missing": "phraseID"}), http.StatusBadRequest)
 		return
 	}
 	if tagID == "" {
-		http.Error(w, "no tag id found", http.StatusBadRequest)
+		errorcode.WriteJSONError(w, errorcode.ErrBadRequest.WithDetails(map[string]string{"missing": "tagID"}), http.StatusBadRequest)
 		return
 	}
 
@@ -236,14 +236,14 @@ func (p *PhraseHandler) UpdateTag(w http.ResponseWriter, r *http.Request) {
 
 	userSession, ok := auth.SessionFromContext(ctx)
 	if !ok {
-		http.Error(w, "no session found", http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, errorcode.ErrNoSession, http.StatusInternalServerError)
 		return
 	}
 
 	var data updateTagRequest
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		fmt.Println(err.Error())
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		errorcode.WriteJSONError(w, errorcode.ErrBadRequest, http.StatusBadRequest)
 		return
 	}
 
@@ -253,7 +253,7 @@ func (p *PhraseHandler) UpdateTag(w http.ResponseWriter, r *http.Request) {
 
 	err := phraseModel.UpdateTag(ctx, &data.Tag, userSession.UserID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errorcode.WriteJSONError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -263,7 +263,7 @@ func (p *PhraseHandler) UpdateTag(w http.ResponseWriter, r *http.Request) {
 func (p *PhraseHandler) DeletePhrase(w http.ResponseWriter, r *http.Request) {
 	phraseID := chi.URLParam(r, "id")
 	if phraseID == "" {
-		http.Error(w, "no phrase id found", http.StatusBadRequest)
+		errorcode.WriteJSONError(w, errorcode.ErrBadRequest.WithDetails(map[string]string{"missing": "phraseID"}), http.StatusBadRequest)
 		return
 	}
 
@@ -272,7 +272,7 @@ func (p *PhraseHandler) DeletePhrase(w http.ResponseWriter, r *http.Request) {
 
 	userSession, ok := auth.SessionFromContext(ctx)
 	if !ok {
-		http.Error(w, "no session found", http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, errorcode.ErrNoSession, http.StatusInternalServerError)
 		return
 	}
 
@@ -280,7 +280,7 @@ func (p *PhraseHandler) DeletePhrase(w http.ResponseWriter, r *http.Request) {
 
 	err := phraseModel.DeletePhrase(ctx, phraseID, userSession.UserID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errorcode.WriteJSONError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -291,11 +291,11 @@ func (p *PhraseHandler) DeleteTag(w http.ResponseWriter, r *http.Request) {
 	phraseID := chi.URLParam(r, "phraseID")
 	tagID := chi.URLParam(r, "tagID")
 	if phraseID == "" {
-		http.Error(w, "no phrase id found", http.StatusBadRequest)
+		errorcode.WriteJSONError(w, errorcode.ErrBadRequest.WithDetails(map[string]string{"missing": "phraseID"}), http.StatusBadRequest)
 		return
 	}
 	if tagID == "" {
-		http.Error(w, "no tag id found", http.StatusBadRequest)
+		errorcode.WriteJSONError(w, errorcode.ErrBadRequest.WithDetails(map[string]string{"missing": "tagID"}), http.StatusBadRequest)
 		return
 	}
 
@@ -304,7 +304,7 @@ func (p *PhraseHandler) DeleteTag(w http.ResponseWriter, r *http.Request) {
 
 	userSession, ok := auth.SessionFromContext(ctx)
 	if !ok {
-		http.Error(w, "no session found", http.StatusInternalServerError)
+		errorcode.WriteJSONError(w, errorcode.ErrNoSession, http.StatusInternalServerError)
 		return
 	}
 
@@ -312,7 +312,7 @@ func (p *PhraseHandler) DeleteTag(w http.ResponseWriter, r *http.Request) {
 
 	err := phraseModel.DeleteTag(ctx, phraseID, tagID, userSession.UserID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errorcode.WriteJSONError(w, err, http.StatusBadRequest)
 		return
 	}
 
