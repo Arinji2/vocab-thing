@@ -5,9 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/arinji2/vocab-thing/internal/database"
+	"github.com/arinji2/vocab-thing/internal/errorcode"
 	"github.com/arinji2/vocab-thing/internal/models"
 	"github.com/arinji2/vocab-thing/internal/utils/idgen"
 )
@@ -33,7 +35,8 @@ func (p *Guest) FetchGuestUser() (*models.User, error) {
 	totalRuns := 0
 	for {
 		if totalRuns > 5 {
-			return nil, fmt.Errorf("exceeding 5 total runs for generating guestID")
+			log.Printf("exceeding 5 total runs for generating guestID")
+			return nil, errorcode.ErrGuestIDCreation
 		}
 		totalRuns++
 		randomID := idgen.GenerateRandomID(6, idgen.NumberCharset)
@@ -48,7 +51,8 @@ func (p *Guest) FetchGuestUser() (*models.User, error) {
 				username = guestID
 				break
 			} else {
-				return nil, fmt.Errorf("error with checking guest unique username: %w", err)
+				log.Printf("error with checking guest unique username: %s", err.Error())
+				return nil, errorcode.ErrGuestIDCreation
 			}
 		}
 

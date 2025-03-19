@@ -2,12 +2,13 @@ package oauth
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"time"
 
+	"github.com/arinji2/vocab-thing/internal/errorcode"
 	"github.com/arinji2/vocab-thing/internal/models"
 	"github.com/gorilla/sessions"
 	"golang.org/x/oauth2"
@@ -41,7 +42,7 @@ func NewProvider(ctx context.Context, providerType string) (ProviderInterface, e
 	case "discord":
 		return NewDiscordProvider(ctx), nil
 	default:
-		return nil, fmt.Errorf("unsupported provider: %s", providerType)
+		return nil, errorcode.ErrUnsupportedProvider
 	}
 }
 
@@ -49,12 +50,14 @@ func (p *BaseProvider) GenerateCodeURL(r *http.Request, w http.ResponseWriter) (
 	state := GenerateState(r, w)
 	session, err := sessionStore.Get(r, "oauth_session")
 	if err != nil {
-		return "", err
+		log.Printf("error getting session store: %s", err.Error())
+		return "", errorcode.ErrGettingSessionStore
 	}
 	session.Values["oauth_state"] = state
 	err = session.Save(r, w)
 	if err != nil {
-		return "", err
+		log.Printf("error saving session store: %s", err.Error())
+		return "", errorcode.ErrSavingSessionStore
 	}
 	return p.Config.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.ApprovalForce), nil
 }
@@ -62,29 +65,33 @@ func (p *BaseProvider) GenerateCodeURL(r *http.Request, w http.ResponseWriter) (
 func (p *BaseProvider) AuthenticateWithCode(r *http.Request, code string, state string) (*models.OauthProvider, error) {
 	session, err := sessionStore.Get(r, "oauth_session")
 	if err != nil {
-		return nil, err
+		log.Printf("error getting session store: %s", err.Error())
+		return nil, errorcode.ErrGettingSessionStore
 	}
 	val := session.Values["oauth_state"]
 	sessionState, ok := val.(string)
 	if !ok {
-		return nil, fmt.Errorf("invalid oauth session state")
+		return nil, errorcode.ErrInvalidOauthState
 	}
 	state, err = url.QueryUnescape(state)
 	if err != nil {
-		return nil, err
+		log.Printf("error unescaping state: %s", err.Error())
+		return nil, errorcode.ErrURLUnescape
 	}
 
 	code, err = url.QueryUnescape(code)
 	if err != nil {
-		return nil, err
+		log.Printf("error unescaping code: %s", err.Error())
+		return nil, errorcode.ErrURLUnescape
 	}
 
 	if sessionState != state {
-		return nil, fmt.Errorf("invalid oauth state")
+		return nil, errorcode.ErrInvalidOauthState
 	}
 	token, err := p.Config.Exchange(p.Ctx, code)
 	if err != nil {
-		return nil, fmt.Errorf("error exchanging token: %w", err)
+		log.Printf("error exchanging token: %s", err.Error())
+		return nil, errorcode.ErrExchangeToken
 	}
 	return &models.OauthProvider{
 		Type:         p.ProviderType,
@@ -112,7 +119,8 @@ func (p *BaseProvider) RefreshAccessToken(o *models.OauthProvider) error {
 	tokenSource := p.Config.TokenSource(p.Ctx, existingToken)
 	newToken, err := tokenSource.Token()
 	if err != nil {
-		return fmt.Errorf("failed to refresh access token: %w", err)
+		log.Printf("error refreshing token: %s", err.Error())
+		return errorcode.ErrRefreshToken
 	}
 
 	o.AccessToken = newToken.AccessToken

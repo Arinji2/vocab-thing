@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 
+	"github.com/arinji2/vocab-thing/internal/errorcode"
 	"github.com/arinji2/vocab-thing/internal/models"
 	"golang.org/x/oauth2"
 )
@@ -39,29 +41,34 @@ func NewGithubProvider(ctx context.Context) *Github {
 func (p *Github) FetchAuthUser(o *models.OauthProvider) (*models.User, error) {
 	err := p.RefreshAccessToken(o)
 	if err != nil {
-		return nil, err
+		log.Printf("error refreshing access token: %s", err.Error())
+		return nil, errorcode.ErrRefreshToken
 	}
 
 	req, err := http.NewRequestWithContext(p.Ctx, "GET", p.UserInfoURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
+		log.Printf("error creating request: %s", err.Error())
+		return nil, errorcode.ErrFetchingOauthUser
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", o.AccessToken))
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("error making request: %w", err)
+		log.Printf("error making request: %s", err.Error())
+		return nil, errorcode.ErrFetchingOauthUser
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		log.Printf("unexpected status code: %d", resp.StatusCode)
+		return nil, errorcode.ErrFetchingOauthUser
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		log.Printf("error reading response body: %s", err.Error())
+		return nil, errorcode.ErrFetchingOauthUser
 	}
 
 	var extracted struct {
@@ -72,10 +79,10 @@ func (p *Github) FetchAuthUser(o *models.OauthProvider) (*models.User, error) {
 	}
 
 	if err := json.Unmarshal(body, &extracted); err != nil {
-		return nil, err
+		log.Printf("error unmarshalling response body: %s", err.Error())
+		return nil, errorcode.ErrFetchingOauthUser
 	}
 
-	// If primary email is not returned, fetch it
 	if extracted.Email == "" {
 		email, err := p.fetchPrimaryEmail(o)
 		if err != nil {
@@ -96,22 +103,22 @@ func (p *Github) FetchAuthUser(o *models.OauthProvider) (*models.User, error) {
 	return user, nil
 }
 
-// fetchPrimaryEmail retrieves the user's primary verified email
 func (p *Github) fetchPrimaryEmail(o *models.OauthProvider) (string, error) {
 	req, err := http.NewRequestWithContext(p.Ctx, "GET", p.UserInfoURL+"/emails", nil)
 	if err != nil {
-		return "", fmt.Errorf("error creating email request: %w", err)
+		log.Printf("error creating email request: %s", err.Error())
+		return "", errorcode.ErrFetchingOauthUser
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", o.AccessToken))
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("error making email request: %w", err)
+		log.Printf("error making email request: %s", err.Error())
+		return "", errorcode.ErrFetchingOauthUser
 	}
 	defer resp.Body.Close()
 
-	// Ignore common authorization errors
 	if resp.StatusCode == http.StatusUnauthorized ||
 		resp.StatusCode == http.StatusForbidden ||
 		resp.StatusCode == http.StatusNotFound {
@@ -120,7 +127,8 @@ func (p *Github) fetchPrimaryEmail(o *models.OauthProvider) (string, error) {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("failed to read email response body: %w", err)
+		log.Printf("error reading email response body: %s", err.Error())
+		return "", errorcode.ErrFetchingOauthUser
 	}
 
 	var emails []struct {
@@ -130,10 +138,10 @@ func (p *Github) fetchPrimaryEmail(o *models.OauthProvider) (string, error) {
 	}
 
 	if err := json.Unmarshal(body, &emails); err != nil {
-		return "", err
+		log.Printf("error unmarshalling email response body: %s", err.Error())
+		return "", errorcode.ErrFetchingOauthUser
 	}
 
-	// Find first verified primary email
 	for _, email := range emails {
 		if email.Verified && email.Primary {
 			return email.Email, nil
