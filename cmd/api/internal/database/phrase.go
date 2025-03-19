@@ -4,11 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"math"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/arinji2/vocab-thing/internal/errorcode"
 	"github.com/arinji2/vocab-thing/internal/models"
 	"github.com/arinji2/vocab-thing/internal/utils"
 )
@@ -20,7 +22,8 @@ type PhraseModel struct {
 func (p *PhraseModel) CreatePhrase(ctx context.Context, phrase *models.Phrase) error {
 	tx, err := p.DB.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("starting transaction: %w", err)
+		log.Printf("starting transaction: %s", err.Error())
+		return errorcode.ErrTransactionStart
 	}
 	defer tx.Rollback()
 	phrase.CreatedAt = time.Now().UTC()
@@ -32,10 +35,12 @@ func (p *PhraseModel) CreatePhrase(ctx context.Context, phrase *models.Phrase) e
 
 	err = tx.QueryRowContext(ctx, query, phrase.UserID, phrase.Phrase, phrase.PhraseDefinition, phrase.Pinned, phrase.FoundIn, phrase.Public, phrase.UsageCount, phrase.CreatedAt.Format(time.RFC3339)).Scan(&phrase.ID)
 	if err != nil {
-		return fmt.Errorf("error with phease creation of userID %s: %w", phrase.UserID, err)
+		log.Printf("error with phrase creation of userID %s: %s", phrase.UserID, err.Error())
+		return errorcode.ErrPhraseCreation
 	}
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("committing transaction: %w", err)
+		log.Printf("committing transaction: %s", err.Error())
+		return errorcode.ErrTransactionCommit
 	}
 
 	return nil
@@ -44,7 +49,8 @@ func (p *PhraseModel) CreatePhrase(ctx context.Context, phrase *models.Phrase) e
 func (p *PhraseModel) CreateTag(ctx context.Context, phrase *models.PhraseTag) error {
 	tx, err := p.DB.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("starting transaction: %w", err)
+		log.Printf("starting transaction: %s", err.Error())
+		return errorcode.ErrTransactionStart
 	}
 	defer tx.Rollback()
 
@@ -57,10 +63,12 @@ func (p *PhraseModel) CreateTag(ctx context.Context, phrase *models.PhraseTag) e
 
 	err = tx.QueryRowContext(ctx, query, phrase.PhraseID, phrase.TagName, phrase.TagColor, phrase.CreatedAt.Format(time.RFC3339)).Scan(&phrase.ID)
 	if err != nil {
-		return fmt.Errorf("error with phease tag creation of phraseID %s: %w", phrase.PhraseID, err)
+		log.Printf("error with phrase tag creation of phraseID %s: %s", phrase.PhraseID, err.Error())
+		return errorcode.ErrPhraseTagCreation
 	}
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("committing transaction: %w", err)
+		log.Printf("committing transaction: %s", err.Error())
+		return errorcode.ErrTransactionCommit
 	}
 
 	return nil
@@ -76,7 +84,8 @@ func (p *PhraseModel) ByID(ctx context.Context, id string, userID string) (*mode
     `
 	rows, err := p.DB.QueryContext(ctx, query, id, userID)
 	if err != nil {
-		return nil, fmt.Errorf("querying phrase: %w", err)
+		log.Printf("querying phrase: %s", err.Error())
+		return nil, errorcode.ErrDBQuery
 	}
 	defer rows.Close()
 
@@ -170,10 +179,11 @@ func (p *PhraseModel) All(ctx context.Context, pageNumber, pageSize int, sortBy,
 			return nil, fmt.Errorf("scanning phrase row: %w", err)
 		}
 
-		phrase.CreatedAt, _ = utils.StringToTime(
-			phraseCreatedAtStr,
-			fmt.Sprintf("Warning: could not parse createdAt '%s' for phrase %s", phraseCreatedAtStr, phrase.Phrase),
-		)
+		phrase.CreatedAt, err = utils.StringToTime(phraseCreatedAtStr)
+		if err != nil {
+			log.Printf("Warning: could not parse createdAt '%s' for phrase %s", phraseCreatedAtStr, phrase.Phrase)
+			phrase.CreatedAt = time.Now().UTC()
+		}
 
 		phraseIDs = append(phraseIDs, phrase.ID)
 		phraseIndex[phrase.ID] = len(phrases)
@@ -216,10 +226,11 @@ func (p *PhraseModel) All(ctx context.Context, pageNumber, pageSize int, sortBy,
 			return nil, fmt.Errorf("scanning tag row: %w", err)
 		}
 
-		tag.CreatedAt, _ = utils.StringToTime(
-			tagCreatedAtStr,
-			fmt.Sprintf("Warning: could not parse createdAt '%s' for phrase tag %s", tagCreatedAtStr, tag.TagName),
-		)
+		tag.CreatedAt, err = utils.StringToTime(tagCreatedAtStr)
+		if err != nil {
+			log.Printf("Warning: could not parse createdAt '%s' for phrase tag %s", tagCreatedAtStr, tag.TagName)
+			tag.CreatedAt = time.Now().UTC()
+		}
 
 		if idx, exists := phraseIndex[tag.PhraseID]; exists {
 			phrases[idx].Tag = append(phrases[idx].Tag, tag)
@@ -296,10 +307,11 @@ func (p *PhraseModel) Search(ctx context.Context, searchTerm, userID string) ([]
 			return nil, fmt.Errorf("scanning search row: %w", err)
 		}
 
-		phrase.CreatedAt, _ = utils.StringToTime(
-			createdAtStr,
-			fmt.Sprintf("Warning: could not parse createdAt '%s' for phrase %s", createdAtStr, phrase.Phrase),
-		)
+		phrase.CreatedAt, err = utils.StringToTime(createdAtStr)
+		if err != nil {
+			log.Printf("Warning: could not parse createdAt '%s' for phrase %s", createdAtStr, phrase.Phrase)
+			phrase.CreatedAt = time.Now().UTC()
+		}
 
 		phrases = append(phrases, phrase)
 	}
@@ -491,10 +503,11 @@ func scanTaggedPhrase(scanner scanner) (models.Phrase, *models.PhraseTag, error)
 		return phrase, nil, err
 	}
 
-	phrase.CreatedAt, _ = utils.StringToTime(
-		phraseCreatedAtStr,
-		fmt.Sprintf("Warning: could not parse createdAt '%s' for phrase %s", phraseCreatedAtStr, phrase.Phrase),
-	)
+	phrase.CreatedAt, err = utils.StringToTime(phraseCreatedAtStr)
+	if err != nil {
+		log.Printf("Warning: could not parse createdAt '%s' for phrase %s", phraseCreatedAtStr, phrase.Phrase)
+		phrase.CreatedAt = time.Now().UTC()
+	}
 
 	if tagID.Valid && tagName.Valid {
 		tag := models.PhraseTag{
@@ -504,10 +517,12 @@ func scanTaggedPhrase(scanner scanner) (models.Phrase, *models.PhraseTag, error)
 			TagColor: tagColor.String,
 		}
 		if tagCreatedAtStr.Valid {
-			tag.CreatedAt, _ = utils.StringToTime(
-				tagCreatedAtStr.String,
-				fmt.Sprintf("Warning: could not parse createdAt '%s' for phrase tag %s for phrase %s", tagCreatedAtStr.String, tag.TagName, phrase.Phrase),
-			)
+			tag.CreatedAt, err = utils.StringToTime(tagCreatedAtStr.String)
+			if err != nil {
+				log.Printf("Warning: could not parse createdAt '%s' for phrase tag %s for phrase %s", tagCreatedAtStr.String, tag.TagName, phrase.Phrase)
+				tag.CreatedAt = time.Now().UTC()
+			}
+
 		}
 		return phrase, &tag, nil
 	}
