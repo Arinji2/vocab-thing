@@ -3,7 +3,6 @@ package database
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 	"time"
 
@@ -29,7 +28,7 @@ func (p *ProviderModel) Create(ctx context.Context, provider *models.OauthProvid
 	err = tx.QueryRowContext(ctx, query, provider.UserID, provider.Type, provider.RefreshToken, provider.AccessToken, provider.ExpiresAt.Format(time.RFC3339)).Scan(&provider.ID)
 	if err != nil {
 		log.Printf("error with provider creation of userID %s and provider type %s: %s", provider.UserID, provider.Type, err.Error())
-		return errorcode.ErrProviderCreate
+		return errorcode.ErrDBCreate
 
 	}
 	if err := tx.Commit(); err != nil {
@@ -46,7 +45,7 @@ func (p *ProviderModel) ByUserID(ctx context.Context, id string) ([]models.Oauth
 	rows, err := p.DB.QueryContext(ctx, query, id)
 	if err != nil {
 		log.Printf("querying providers: %s", err.Error())
-		return nil, errorcode.ErrProviderQuery
+		return nil, errorcode.ErrDBQuery
 	}
 	defer rows.Close()
 
@@ -70,8 +69,17 @@ func (p *ProviderModel) ByUserID(ctx context.Context, id string) ([]models.Oauth
 			return nil, errorcode.ErrScanningRow
 		}
 
-		provider.CreatedAt, _ = utils.StringToTime(createdAtStr, fmt.Sprintf("Warning: could not parse createdAt '%s' for provider %s", createdAtStr, provider.ID))
-		provider.ExpiresAt, _ = utils.StringToTime(expiresAtStr, fmt.Sprintf("Warning: could not parse expiresAt '%s' for provider %s", expiresAtStr, provider.ID))
+		provider.CreatedAt, err = utils.StringToTime(createdAtStr)
+		if err != nil {
+			log.Printf("Warning: could not parse createdAt '%s' for provider %s", createdAtStr, provider.ID)
+			provider.CreatedAt = time.Now().UTC()
+		}
+
+		provider.ExpiresAt, err = utils.StringToTime(expiresAtStr)
+		if err != nil {
+			log.Printf("Warning: could not parse expiresAt '%s' for provider %s", expiresAtStr, provider.ID)
+			provider.ExpiresAt = time.Now().UTC()
+		}
 
 		providers = append(providers, provider)
 	}
