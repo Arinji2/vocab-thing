@@ -14,7 +14,7 @@ All endpoints require an authenticated user session. This is taken from the cook
 
 ## Endpoints
 
-### Get a Phrase by ID
+### Get User Sync Data
 
 **Endpoint:**
 
