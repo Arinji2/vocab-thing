@@ -3,9 +3,10 @@ package database
 import (
 	"context"
 	"database/sql"
-	"fmt"
+	"log"
 	"time"
 
+	"github.com/arinji2/vocab-thing/internal/errorcode"
 	"github.com/arinji2/vocab-thing/internal/models"
 )
 
@@ -16,7 +17,8 @@ type SyncModel struct {
 func (s *SyncModel) CreateSync(ctx context.Context, userID string) error {
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("starting transaction: %w", err)
+		log.Printf("starting transaction: %s", err.Error())
+		return errorcode.ErrTransactionStart
 	}
 	defer tx.Rollback()
 
@@ -33,11 +35,13 @@ func (s *SyncModel) CreateSync(ctx context.Context, userID string) error {
 
 	err = tx.QueryRowContext(ctx, query, syncData.UserID, syncData.LastUpdatedAt).Scan(&syncData.ID)
 	if err != nil {
-		return fmt.Errorf("error creating sync record for userID %s: %w", userID, err)
+		log.Printf("error creating sync record for userID %s: %s", syncData.UserID, err.Error())
+		return errorcode.ErrDBCreate
 	}
 
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("committing transaction: %w", err)
+		log.Printf("committing transaction: %s", err.Error())
+		return errorcode.ErrTransactionCommit
 	}
 
 	return nil
@@ -55,7 +59,8 @@ func (s *SyncModel) ByUserID(ctx context.Context, userID string) (*models.SyncMe
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("error fetching sync record for userID %s: %w", userID, err)
+		log.Printf("error fetching sync record for userID %s: %s", userID, err.Error())
+		return nil, errorcode.ErrDBQuery
 	}
 	return &syncData, nil
 }
@@ -63,16 +68,18 @@ func (s *SyncModel) ByUserID(ctx context.Context, userID string) (*models.SyncMe
 func (s *SyncModel) ManualSync(ctx context.Context, userID string) (*models.SyncMetadata, error) {
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("starting transaction: %w", err)
+		log.Printf("starting transaction: %s", err.Error())
+		return nil, errorcode.ErrTransactionStart
 	}
 	defer tx.Rollback()
 	existingSync, err := s.ByUserID(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("error fetching sync record for userID %s: %w", userID, err)
+		log.Printf("error fetching sync record for userID %s: %s", userID, err.Error())
+		return nil, errorcode.ErrDBQuery
 	}
 
 	if existingSync.LastUpdatedAt.After(time.Now().Add(-30 * time.Minute)) {
-		return existingSync, fmt.Errorf("sync record for userID %s is already up to date, please wait %v minutes before resyncing", userID, int(time.Until(existingSync.LastUpdatedAt.Add(30*time.Minute)).Minutes()))
+		return existingSync, errorcode.ErrManualSyncLimit.WithDetails(map[string]int{"waitFor": int(time.Until(existingSync.LastUpdatedAt.Add(30 * time.Minute)).Minutes())})
 	}
 
 	syncData := models.SyncMetadata{
@@ -87,11 +94,13 @@ func (s *SyncModel) ManualSync(ctx context.Context, userID string) (*models.Sync
 
 	err = tx.QueryRowContext(ctx, query, syncData.LastUpdatedAt, syncData.UserID).Scan(&syncData.ID)
 	if err != nil {
-		return nil, fmt.Errorf("error updating sync record for userID %s: %w", userID, err)
+		log.Printf("error updating sync record for userID %s: %s", syncData.UserID, err.Error())
+		return nil, errorcode.ErrDBUpdate
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("committing transaction: %w", err)
+		log.Printf("committing transaction: %s", err.Error())
+		return nil, errorcode.ErrTransactionCommit
 	}
 	return &syncData, nil
 }
