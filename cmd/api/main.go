@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -17,7 +16,7 @@ func main() {
 	}
 	defer db.Close()
 
-	fmt.Println("Database setup complete and ready to use.")
+	log.Println("Database setup complete and ready to use.")
 
 	srv := http.Server{
 		Addr:    ":8080",
