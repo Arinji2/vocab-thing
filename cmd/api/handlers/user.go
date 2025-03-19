@@ -54,7 +54,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	err := userModel.Create(ctx, &userData)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errorcode.WriteJSONError(w, err, http.StatusBadRequest)
 		return
 	}
 	syncModel := database.SyncModel{DB: h.DB}
