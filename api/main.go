@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	db, err := database.SetupDatabase("../../db/app.db")
+	db, err := database.SetupDatabase("../db/app.db")
 	if err != nil {
 		log.Fatal(err)
 	}
