@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@fontsource/tektur':
+        specifier: ^5.2.5
+        version: 5.2.5
       '@tanstack/react-query':
         specifier: ^5.66.0
         version: 5.69.0(react@19.0.0)
@@ -615,6 +618,9 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@fontsource/tektur@5.2.5':
+    resolution: {integrity: sha512-YBE3TP2Y5lhn/wJCx/WDFfM34Mhf42L4VWhjtwcE6cArL5+3HAvRP53brfexStU5wFmgf4WGrJutmMW7mFR08g==}
 
   '@ioredis/commands@1.2.0':
     resolution: {integrity: sha512-Sx1pU8EM64o2BrqNpEO1CNLtKQwyhuXuqyfH7oGKCk+1a33d2r5saW8zNwm3j6BTExtjrv2BxTgzzkMwts6vGg==}
@@ -3309,6 +3315,8 @@ snapshots:
 
   '@esbuild/win32-x64@0.25.1':
     optional: true
+
+  '@fontsource/tektur@5.2.5': {}
 
   '@ioredis/commands@1.2.0': {}
 
