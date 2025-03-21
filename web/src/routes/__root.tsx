@@ -75,7 +75,7 @@ function RootComponent() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html>
+    <html className="bg-neutral-800">
       <head>
         <HeadContent />
       </head>
