@@ -2,7 +2,6 @@ import type { QueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
   HeadContent,
-  Link,
   Outlet,
   Scripts,
   createRootRouteWithContext,
@@ -29,6 +28,9 @@ export const Route = createRootRouteWithContext<{
       ...seo({
         title: "Vocab Thing",
         description: `Save words and phrases you find on the internet, and use them in the future effortlessly`,
+        theme: "#89DFE9",
+        keywords:
+          "vocab, vocabthing, arinji, arinji.com, arinjay dhar, save words, phrases",
       }),
     ],
     links: [
@@ -51,7 +53,14 @@ export const Route = createRootRouteWithContext<{
         href: "/favicon-16x16.png",
       },
       { rel: "manifest", href: "/site.webmanifest", color: "#fffff" },
-      { rel: "icon", href: "/favicon.ico" },
+      {
+        rel: "icon",
+        type: "image/png",
+        href: "/favicon-96x96.png",
+        sizes: "96x96",
+      },
+      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+      { rel: "shortcut icon", href: "/favicon.ico" },
     ],
   }),
   errorComponent: (props) => {
@@ -75,23 +84,12 @@ function RootComponent() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html className="bg-neutral-800">
+    <html className="bg-brand-background">
       <head>
         <HeadContent />
       </head>
       <body>
-        <div className="p-2 flex gap-2 text-lg">
-          <Link
-            to="/"
-            activeProps={{
-              className: "font-bold",
-            }}
-            activeOptions={{ exact: true }}
-          >
-            Home
-          </Link>{" "}
-        </div>
-        <hr />
+        <div className="p-2 flex gap-2 text-lg"></div>
         {children}
         <TanStackRouterDevtools position="bottom-right" />
         <ReactQueryDevtools buttonPosition="bottom-left" />
