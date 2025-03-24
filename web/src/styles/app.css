@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --navbar-height: 90px;
+  }
+}
+
+@layer utilities {
+  .h-full-navbar {
+    height: calc(100svh - var(--navbar-height));
+  }
+  .h-navbar {
+    height: var(--navbar-height);
+  }
+  .screen-padding {
+    @apply px-4 md:px-2 2xl:px-0;
+  }
+}
+
 @font-face {
   font-family: "Tektur";
   font-style: normal;

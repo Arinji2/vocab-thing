@@ -5,10 +5,21 @@ export default {
     extend: {
       letterSpacing: {
         small: "0.04rem",
+        large: "0.08rem",
       },
       colors: {
         brand: {
           text: "#e5f9fa",
+          offwhite: {
+            DEFAULT: "#6b7280",
+            dark: "#374151",
+            light: "#9ca3af",
+          },
+          destructive: {
+            DEFAULT: "#ef4444",
+            dark: "#b91c1c",
+            light: "#fa575f",
+          },
           background: "#041518",
           primary: {
             DEFAULT: "#89dfe9",
