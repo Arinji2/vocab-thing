@@ -1,3 +1,5 @@
+import { Navbar } from "@/app/navbar";
+import { Viewport } from "next";
 import { Tektur } from "next/font/google";
 import type React from "react";
 import "./globals.css";
@@ -13,7 +15,6 @@ export const metadata = {
     "Save words and phrases you find on the internet, and use them in the future effortlessly",
   keywords:
     "vocab, vocabthing, arinji, arinji.com, arinjay dhar, save words, phrases",
-  themeColor: "#89DFE9",
   icons: {
     icon: [
       { url: "/metadata/favicon-16x16.png", sizes: "16x16", type: "image/png" },
@@ -26,6 +27,9 @@ export const metadata = {
   },
   manifest: "/metadata/site.webmanifest",
 };
+export const viewport: Viewport = {
+  themeColor: "#89DFE9",
+};
 
 export default function RootLayout({
   children,
@@ -33,8 +37,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${tektur.className} antialiased`}>{children}</body>
+    <html lang="en" className="bg-brand-background">
+      <body
+        className={`flex h-full w-full flex-col items-center justify-start ${tektur.className} antialiased`}
+      >
+        <div className="flex w-full max-w-[1280px] flex-col items-center justify-start">
+          <Navbar />
+          {children}
+        </div>
+      </body>
     </html>
   );
 }
