@@ -1,0 +1,28 @@
+{
+  "name": "Vocab Thing",
+  "short_name": "Vocab Thing",
+  "description": "Save words and phrases you find on the internet, and use them in the future effortlessly.",
+  "icons": [
+    {
+      "src": "/metadata/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/metadata/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/metadata/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#89DFE9",
+  "background_color": "#041518",
+  "start_url": "/",
+  "display": "standalone"
+}
