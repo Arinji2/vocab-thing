@@ -1,3 +1,7 @@
 export default function Page() {
-  return <div>Hello World</div>;
+  return (
+    <div className="bg-brand-destructive tracking-small text-xl">
+      Hello World
+    </div>
+  );
 }
