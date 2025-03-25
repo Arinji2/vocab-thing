@@ -38,6 +38,6 @@ export const wordsQueryOptions = () =>
     queryKey: ["words"],
     queryFn: fetchWords,
     staleTime: Infinity,
-    gcTime: 1000 * 60 * 60, //1hr
+    gcTime: 1000 * 60 * 60 * 24, // 24 hours
     retry: false,
   });
