@@ -1,6 +1,6 @@
 export default function Works() {
   return (
-    <div className="w-full h-[50svh] flex flex-col items-center justify-start gap-10">
+    <div className="w-full md:h-[50svh] flex flex-col items-center justify-start gap-10">
       <h2 className="font-semibold text-4xl text-center md:text-5xl tracking-large text-brand-text">
         How It Works
       </h2>
