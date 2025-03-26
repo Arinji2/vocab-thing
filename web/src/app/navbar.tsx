@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 
 export function Navbar() {
   return (
-    <div className="h-navbar screen-padding sticky top-0 z-50 flex w-full flex-row items-center justify-between border-b-[4px] border-white/10 bg-brand-background">
+    <div className="h-navbar px-4 md:px-2 2xl:px-0 screen-padding sticky top-0 z-50 flex w-full flex-row items-center justify-between border-b-[4px] border-white/10 bg-brand-background">
       <img
         src="/logo/logo.png"
         alt="logo"
