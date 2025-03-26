@@ -21,7 +21,7 @@ export async function Words() {
           <span className="text-red-500">Nonsense</span>
         </a>
       </p>
-      <div className="flex h-full w-full flex-row items-center justify-start gap-10 overflow-x-auto">
+      <div className="flex h-full w-full flex-row items-center snap-x snap-proximity justify-start gap-10 overflow-x-auto">
         {data.map((d) => (
           <WordCard data={d} key={d.id} />
         ))}
@@ -45,7 +45,7 @@ export async function WordsLoading() {
           <span className="text-red-500">Nonsense</span>
         </a>
       </p>
-      <div className="flex h-full w-full flex-row items-center justify-start gap-10 overflow-x-auto">
+      <div className="flex h-full w-full flex-row items-center snap-x snap-proximity justify-start gap-10 overflow-x-auto">
         {[...Array(3)].map((_, i) => (
           <WordSuspenseCard key={i} />
         ))}
@@ -56,7 +56,7 @@ export async function WordsLoading() {
 
 function WordCard({ data }: { data: WordSchemaType }) {
   return (
-    <article className="flex h-full min-h-[200px] w-[350px] shrink-0 flex-col items-start justify-start gap-3 rounded-xl bg-brand-secondary-dark p-4">
+    <article className="snap-center flex h-full min-h-[200px] w-full md:w-[350px] shrink-0 flex-col items-start justify-start gap-3 rounded-xl bg-brand-secondary-dark p-4">
       <div className="flex h-fit w-full flex-col items-start justify-start">
         <p className="text-sm tracking-small text-brand-text">title</p>
         <p className="line-clamp-1 text-xl font-semibold tracking-small text-brand-primary">
@@ -78,7 +78,7 @@ function WordCard({ data }: { data: WordSchemaType }) {
 
 function WordSuspenseCard() {
   return (
-    <article className="flex h-full min-h-[200px] w-[350px] shrink-0 flex-col items-start justify-start gap-3 rounded-xl bg-brand-secondary-dark p-4">
+    <article className="flex h-full min-h-[200px] w-full snap-center md:w-[350px] shrink-0 flex-col items-start justify-start gap-3 rounded-xl bg-brand-secondary-dark p-4">
       <div className="flex h-fit w-full flex-col items-start justify-start gap-1">
         <p className="text-sm tracking-small text-brand-text">title</p>
         <Skeleton className="h-5 w-full" />
