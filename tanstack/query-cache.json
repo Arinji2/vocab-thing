@@ -1,0 +1,45 @@
+{
+  "buster": "",
+  "timestamp": 1743012049476,
+  "clientState": {
+    "mutations": [],
+    "queries": [
+      {
+        "state": {
+          "data": [
+            {
+              "id": "0y577ucooozcl5a",
+              "word": "labelization",
+              "definition": "assigning labels to data points for analysis."
+            },
+            {
+              "id": "ru0nqcm1e10m4nk",
+              "word": "myrmicinae",
+              "definition": "ant subfamily; small, predatory, largely terrestrial ants"
+            },
+            {
+              "id": "f23ltn16632fxj0",
+              "word": "recondite",
+              "definition": "deeply learned, obscure, understood by few."
+            }
+          ],
+          "dataUpdateCount": 7,
+          "dataUpdatedAt": 1743012049476,
+          "error": null,
+          "errorUpdateCount": 0,
+          "errorUpdatedAt": 0,
+          "fetchFailureCount": 0,
+          "fetchFailureReason": null,
+          "fetchMeta": null,
+          "isInvalidated": false,
+          "status": "success",
+          "fetchStatus": "idle"
+        },
+        "queryKey": [
+          "words"
+        ],
+        "queryHash": "[\"words\"]"
+      }
+    ]
+  }
+}

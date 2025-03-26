@@ -1,16 +1,21 @@
-import { Words, WordsLoading } from "@/app/(home)/word";
-import { Button } from "@/components/ui/button";
-import { ErrorWrapper } from "@/components/ui/error-boundary";
-import OptimizedImage from "@/utils/image";
+import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
+import { ErrorWrapper } from "~/components/ErrorWrapper";
+import OptimizedImage from "~/components/image";
+import { Words, WordsLoading } from "~/components/routes/home/word";
+import { Button } from "~/components/ui/button";
 
-export default function Page() {
+export const Route = createFileRoute("/")({
+  component: Home,
+});
+
+function Home() {
   return (
     <div className="flex h-fit w-full min-w-1 flex-col items-center justify-start">
       <div className="xl:h-full-navbar relative flex h-fit w-full flex-col items-start justify-stretch">
         <div className="screen-padding relative z-20 flex h-full w-full flex-col items-start justify-start gap-14 py-8 md:gap-6 xl:py-12">
           <h1 className="text-2xl font-medium tracking-large text-brand-text md:text-4xl">
-            NEXTJS
+            TANSTACK START
           </h1>
           <div className="flex h-fit w-fit flex-row items-center justify-start gap-6">
             <Button variant={"default"}>Get Started</Button>
@@ -42,7 +47,7 @@ export default function Page() {
 
         <OptimizedImage
           fill
-          srcLocation="/home/words/words"
+          srcLocation="/words/words"
           alt="Word Background"
           decoding="async"
         />
