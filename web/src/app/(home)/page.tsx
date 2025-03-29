@@ -1,5 +1,6 @@
 import Features from "@/app/(home)/features";
 import Hero from "@/app/(home)/hero";
+import Info from "@/app/(home)/info";
 import Works from "@/app/(home)/works";
 
 export default function Page() {
@@ -8,6 +9,7 @@ export default function Page() {
       <Hero />
       <Works />
       <Features />
+      <Info />
     </div>
   );
 }
