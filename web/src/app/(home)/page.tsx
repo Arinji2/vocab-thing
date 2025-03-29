@@ -1,4 +1,5 @@
 import Features from "@/app/(home)/features";
+import Footer from "@/app/(home)/footer";
 import Hero from "@/app/(home)/hero";
 import Info from "@/app/(home)/info";
 import Works from "@/app/(home)/works";
@@ -10,6 +11,7 @@ export default function Page() {
       <Works />
       <Features />
       <Info />
+      <Footer />
     </div>
   );
 }
