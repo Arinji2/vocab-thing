@@ -29,3 +29,7 @@
   --height-navbar: var(--navbar-height);
   --height-full-navbar: calc(100svh - var(--navbar-height));
 }
+
+@utility screen-padding {
+  @apply px-4 md:px-2 2xl:px-0;
+}
