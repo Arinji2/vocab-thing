@@ -20,6 +20,10 @@ type generateCodeURLRequest struct {
 	ProviderType string `json:"providerType"`
 }
 
+type generateCodeURLResponse struct {
+	CodeURL string `json:"codeURL"`
+}
+
 func (h *UserHandler) GenerateCodeURL(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
@@ -43,7 +47,10 @@ func (h *UserHandler) GenerateCodeURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(codeURL))
+	response := generateCodeURLResponse{
+		CodeURL: codeURL,
+	}
+	writeJSON(w, http.StatusOK, response)
 }
 
 type callbackHandlerRequest struct {
