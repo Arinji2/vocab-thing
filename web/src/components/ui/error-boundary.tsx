@@ -1,10 +1,18 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/utils/cn";
+import { ClassValue } from "clsx";
 import { useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
-export function ErrorWrapper({ children }: { children: React.ReactNode }) {
+export function ErrorWrapper({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: ClassValue;
+}) {
   const [errorKey, setErrorKey] = useState(0); // Track key to force remount on error
 
   return (
@@ -22,7 +30,9 @@ export function ErrorWrapper({ children }: { children: React.ReactNode }) {
         </div>
       )}
     >
-      <div key={errorKey}>{children}</div>
+      <div key={errorKey} className={cn("w-full h-full", className)}>
+        {children}
+      </div>
     </ErrorBoundary>
   );
 }
