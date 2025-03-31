@@ -2,6 +2,7 @@ import { Words, WordsLoading } from "@/app/(home)/word";
 import { Button } from "@/components/ui/button";
 import { ErrorWrapper } from "@/components/ui/error-boundary";
 import OptimizedImage from "@/utils/image";
+import Link from "next/link";
 import { Suspense } from "react";
 
 export default function Hero() {
@@ -13,7 +14,9 @@ export default function Hero() {
           in the future effortlessly
         </h1>
         <div className="flex h-fit w-fit flex-row items-center justify-start gap-6">
-          <Button variant={"default"}>Get Started</Button>
+          <Button asChild variant={"default"}>
+            <Link href="/login">Get Started</Link>
+          </Button>
           <Button variant={"secondary"}>Add Extension</Button>
         </div>
         <div className="flex h-fit w-fit flex-row items-center justify-start gap-6">
