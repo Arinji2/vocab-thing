@@ -54,6 +54,14 @@ func (p *BaseProvider) GenerateCodeURL(r *http.Request, w http.ResponseWriter) (
 		return "", errorcode.ErrGettingSessionStore
 	}
 	session.Values["oauth_state"] = state
+
+	session.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   SessionExpiry(time.Now()).UTC().Second(),
+		HttpOnly: true,
+		Secure:   os.Getenv("ENVIRONMENT") == "production",
+		SameSite: http.SameSiteLaxMode,
+	}
 	err = session.Save(r, w)
 	if err != nil {
 		log.Printf("error saving session store: %s", err.Error())
