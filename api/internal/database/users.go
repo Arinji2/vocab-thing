@@ -96,7 +96,7 @@ func (m *UserModel) ByUsername(ctx context.Context, username string) (models.Use
 	if err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("user not found with username %s: %s", username, err.Error())
-			return models.User{}, errorcode.ErrDBQuery
+			return models.User{}, sql.ErrNoRows
 		}
 		log.Printf("scanning user row: %s", err.Error())
 		return models.User{}, errorcode.ErrScanningRow
