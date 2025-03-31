@@ -5,7 +5,7 @@ import {
   OauthCallbackURLAction,
   OauthCallbackURLActionState,
 } from "@/data/login/login.action";
-import { LoginProviders } from "@/data/login/login";
+import { LoginProvidersType } from "@/data/login/login";
 import { cn } from "@/utils/cn";
 import { formatCapitalize } from "@/utils/format";
 import { ClassValue } from "clsx";
@@ -17,7 +17,7 @@ export default function LoginButton({
   provider,
   className,
 }: {
-  provider: LoginProviders;
+  provider: LoginProvidersType;
   className?: ClassValue;
 }) {
   const router = useRouter();

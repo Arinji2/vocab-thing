@@ -1,5 +1,6 @@
 import z from "zod";
-export type LoginProviders = "google" | "discord" | "github" | "guest";
+export const LoginProviders = z.enum(["google", "discord", "github", "guest"]);
+export type LoginProvidersType = z.infer<typeof LoginProviders>;
 
 export const OauthCallbackURLSchema = z.object({
   codeURL: z.string(),
