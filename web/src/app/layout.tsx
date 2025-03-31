@@ -2,6 +2,7 @@ import { Navbar } from "@/app/navbar";
 import { Viewport } from "next";
 import { Tektur } from "next/font/google";
 import type React from "react";
+import { generateTitle, generateDescription } from "@/utils/generateMetadata";
 import "./globals.css";
 
 const tektur = Tektur({
@@ -10,9 +11,8 @@ const tektur = Tektur({
 });
 
 export const metadata = {
-  title: "VocabThing",
-  description:
-    "Save words and phrases you find on the internet, and use them in the future effortlessly",
+  title: generateTitle(),
+  description: generateDescription(),
   keywords:
     "vocab, vocabthing, arinji, arinji.com, arinjay dhar, save words, phrases",
   icons: {

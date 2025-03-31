@@ -1,7 +1,14 @@
 import LoginButton from "@/app/login/button.client";
 import { ErrorWrapper } from "@/components/ui/error-boundary";
+import { generateTitle, generateDescription } from "@/utils/generateMetadata";
 import { CheckCircle2 } from "lucide-react";
-
+import { Metadata } from "next";
+export const metadata: Metadata = {
+  title: generateTitle("Login"),
+  description: generateDescription(
+    "Login to Vocab Thing with Socials Or as a Guest. Supported Socials: Google, Discord, Github",
+  ),
+};
 export default function Page() {
   return (
     <div className="h-fit flex flex-col items-center justify-center py-4 gap-10 w-full xl:h-full-navbar screen-padding ">
