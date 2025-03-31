@@ -124,7 +124,7 @@ func (m *UserModel) ByEmail(ctx context.Context, email string) (models.User, err
 	if err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("user not found with email %s: %s", email, err.Error())
-			return models.User{}, errorcode.ErrDBQuery
+			return models.User{}, sql.ErrNoRows
 		}
 		log.Printf("scanning user row: %s", err.Error())
 		return models.User{}, errorcode.ErrScanningRow
