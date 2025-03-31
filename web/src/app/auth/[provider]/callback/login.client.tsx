@@ -14,30 +14,28 @@ export default function Login({
   code,
   state,
   ip,
+  fingerprint,
 }: {
   providerType: LoginProvidersType;
   code: string;
   state: string;
   ip: string;
+  fingerprint: string;
 }) {
   const router = useRouter();
   const [timeElapsed, setTimeElapsed] = useState(0);
-  const [fingerPrint, setFingerPrint] = useState("");
   const [actionState, action, isPending] =
     useActionState<LoginWithSocialActionState>(LoginWithSocialAction, {
       providerType: providerType,
       code: code,
       state: state,
       ip: ip,
-      fingerprint: fingerPrint,
+      fingerprint: fingerprint,
     });
 
   useEffect(() => {
     const shouldTriggerAction =
-      !isPending &&
-      fingerPrint &&
-      !("success" in actionState) &&
-      !("error" in actionState);
+      !isPending && !("success" in actionState) && !("error" in actionState);
 
     if (shouldTriggerAction) {
       startTransition(() => {
@@ -49,13 +47,13 @@ export default function Login({
       if (actionState.success) {
         router.push("/dashboard");
       } else {
+        console.log("TEST");
         router.push("/login");
       }
     }
-  }, [router, action, actionState, isPending, fingerPrint]);
+  }, [router, action, actionState, isPending]);
 
   useEffect(() => {
-    setFingerPrint(window.navigator.userAgent);
     const timer = setTimeout(() => {
       setTimeElapsed(timeElapsed + 1);
     }, 1000);

@@ -45,6 +45,7 @@ async function SuspensedPage({
     headerStore.get("x-vercel-forwarded-for") ||
     headerStore.get("x-forwarded-for") ||
     "0.0.0.0";
+  const userAgent = headerStore.get("user-agent") ?? "Unknown";
   return (
     <div className="h-fit flex flex-col items-center justify-center py-4 gap-10 w-full xl:h-full-navbar screen-padding ">
       <h1 className="text-3xl text-center md:text-5xl font-bold text-brand-text tracking-large">
@@ -55,6 +56,7 @@ async function SuspensedPage({
         code={code}
         state={state}
         ip={userIP}
+        fingerprint={userAgent}
       />
     </div>
   );
