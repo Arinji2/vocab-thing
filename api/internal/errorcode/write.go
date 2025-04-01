@@ -13,6 +13,7 @@ func WriteJSONError(w http.ResponseWriter, err error, statusCode int) {
 		json.NewEncoder(w).Encode(map[string]any{
 			"errorCode": appErr.Code,
 			"message":   appErr.Message,
+			"readable":  appErr.Readable,
 		})
 		return
 	}
@@ -22,6 +23,7 @@ func WriteJSONError(w http.ResponseWriter, err error, statusCode int) {
 	json.NewEncoder(w).Encode(map[string]any{
 		"errorCode": 500,
 		"message":   "Internal Server Error",
+		"readable":  "Internal Server Error",
 		"details":   err.Error(),
 	})
 }
