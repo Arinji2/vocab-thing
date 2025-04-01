@@ -1,7 +1,9 @@
-import { Button } from "@/components/ui/button";
+import { Suspense } from "react";
+import { LoginButton } from "./login";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
-export function Navbar() {
+export function HomeNavbar() {
   return (
     <div className="h-navbar screen-padding sticky top-0 z-50 flex w-full flex-row items-center justify-between border-b-[4px] border-white/10 bg-brand-background">
       <Link href="/">
@@ -25,9 +27,15 @@ export function Navbar() {
           className="block object-cover md:hidden"
         />
       </Link>
-      <Button asChild variant={"secondary"}>
-        <Link href="/login">Get Started</Link>
-      </Button>
+      <Suspense
+        fallback={
+          <Button asChild disabled variant={"secondary"}>
+            Get Started
+          </Button>
+        }
+      >
+        <LoginButton />
+      </Suspense>
     </div>
   );
 }

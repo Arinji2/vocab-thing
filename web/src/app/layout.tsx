@@ -1,4 +1,3 @@
-import { Navbar } from "@/app/navbar";
 import { Viewport } from "next";
 import { Tektur } from "next/font/google";
 import type React from "react";
@@ -42,7 +41,6 @@ export default function RootLayout({
         className={`flex h-full w-full flex-col items-center justify-start ${tektur.className} antialiased`}
       >
         <div className="flex w-full max-w-[1280px] flex-col items-center justify-start">
-          <Navbar />
           {children}
         </div>
       </body>

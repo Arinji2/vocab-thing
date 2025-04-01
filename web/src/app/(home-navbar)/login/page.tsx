@@ -1,4 +1,4 @@
-import LoginButton from "@/app/login/button.client";
+import LoginButton from "./button.client";
 import { ErrorWrapper } from "@/components/ui/error-boundary";
 import { generateTitle, generateDescription } from "@/utils/generateMetadata";
 import { CheckCircle2 } from "lucide-react";
