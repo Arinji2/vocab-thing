@@ -3,6 +3,7 @@ import { LoginProvidersType, OauthCallbackURLSchema } from "./login";
 import { getApiURL } from "@/data/utils/getApiURL";
 import { setServerCookies } from "../utils/setServerCookie";
 import { cookies } from "next/headers";
+import { ErrorResponseSchema, HandleResponseError } from "@/data/errors";
 
 export type OauthCallbackURLActionState =
   | { providerType: LoginProvidersType }
@@ -33,13 +34,16 @@ export async function OauthCallbackURLAction(
     });
 
     await setServerCookies(res);
-
-    if (!res.ok) {
-      throw new Error("Failed to get callback url");
+    const resError = await HandleResponseError("OAuth callback URL", res);
+    if (resError) {
+      return {
+        ...previousState,
+        success: false,
+        error: resError.readable,
+      };
     }
 
     const data = await res.json();
-
     return {
       ...previousState,
       success: true,
@@ -68,16 +72,19 @@ export async function LoginAsGuestAction() {
 
     await setServerCookies(res);
 
-    if (!res.ok) {
-      throw new Error("Failed to login as guest");
+    const resError = await HandleResponseError("Guest Login", res);
+    if (resError) {
+      return {
+        success: false,
+        error: resError.readable,
+      };
     }
-
     return { success: true };
   } catch (error) {
     console.error("Guest login error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error occurred",
+      error: "Unknown error occurred",
     };
   }
 }
@@ -128,20 +135,32 @@ export async function LoginWithSocialAction(
     });
 
     await setServerCookies(res);
-    if (!res.ok) {
-      throw new Error("Failed to login with social");
-    }
-
-    return {
-      ...previousState,
-      success: true,
-    };
+    const resError = await HandleResponseError("Social Login", res);
+    if (resError) {
+      return {
+        ...previousState,
+        success: false,
+        error: resError.readable,
+      };
+    } else
+      return {
+        ...previousState,
+        success: true,
+      };
   } catch (error) {
     console.error("Social login error:", error);
     return {
       ...previousState,
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error occurred",
+      error: "Unknown error occurred",
     };
+  } finally {
+    const cookieStore = await cookies();
+    if (cookieStore.get("oauth_state")) {
+      cookieStore.delete("oauth_state");
+    }
+    if (cookieStore.get("oauth_session")) {
+      cookieStore.delete("oauth_session");
+    }
   }
 }
