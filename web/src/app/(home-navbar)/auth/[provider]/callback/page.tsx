@@ -4,22 +4,8 @@ import { formatCapitalize } from "@/utils/format";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { unstable_noStore as noStore } from "next/cache";
-import { Suspense } from "react";
-export default function Page({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ provider: string }>;
-  searchParams: Promise<{ state: string; code: string }>;
-}) {
-  return (
-    <Suspense>
-      <SuspensedPage params={params} searchParams={searchParams} />
-    </Suspense>
-  );
-}
 
-async function SuspensedPage({
+export default async function Page({
   params,
   searchParams,
 }: {
