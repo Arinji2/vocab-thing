@@ -2,10 +2,12 @@ import { Words, WordsLoading } from "./word";
 import { Button } from "@/components/ui/button";
 import { ErrorWrapper } from "@/components/ui/error-boundary";
 import OptimizedImage from "@/utils/image";
+import { isLoggedIn } from "@/utils/isLoggedIn";
 import Link from "next/link";
 import { Suspense } from "react";
 
-export default function Hero() {
+export default async function Hero() {
+  const loggedIn = await isLoggedIn();
   return (
     <div className="xl:h-full-navbar relative flex h-fit w-full flex-col items-start justify-stretch">
       <div className="screen-padding relative z-20 flex h-full w-full flex-col items-start justify-start gap-14 py-8 md:gap-6 xl:py-12">
@@ -36,7 +38,7 @@ export default function Hero() {
           <div className="w-full max-w-full overflow-hidden">
             <ErrorWrapper>
               <Suspense fallback={<WordsLoading />}>
-                <Words />
+                <Words isLoggedIn={loggedIn} />
               </Suspense>
             </ErrorWrapper>
           </div>

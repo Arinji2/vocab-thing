@@ -1,10 +1,11 @@
 "use cache";
+import { WordCard } from "@/app/(home-navbar)/(home)/word.client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fetchWords, WordSchemaType } from "@/data/words";
+import { fetchWords } from "@/data/words";
 import { unstable_cacheLife as cacheLife } from "next/cache";
 
-export async function Words() {
+export async function Words({ isLoggedIn }: { isLoggedIn: boolean }) {
   cacheLife("hours");
   const data = await fetchWords();
   return (
@@ -23,7 +24,7 @@ export async function Words() {
       </p>
       <div className="flex h-full w-full flex-row items-center snap-x snap-proximity justify-start gap-10 overflow-x-auto">
         {data.map((d) => (
-          <WordCard data={d} key={d.id} />
+          <WordCard data={d} key={d.id} isLoggedIn={isLoggedIn} />
         ))}
       </div>
     </div>
@@ -51,28 +52,6 @@ export async function WordsLoading() {
         ))}
       </div>
     </div>
-  );
-}
-
-function WordCard({ data }: { data: WordSchemaType }) {
-  return (
-    <article className="snap-center flex h-full min-h-[200px] w-full md:w-[350px] shrink-0 flex-col items-start justify-start gap-3 rounded-xl bg-brand-secondary-dark p-4">
-      <div className="flex h-fit w-full flex-col items-start justify-start">
-        <p className="text-sm tracking-small text-brand-text">title</p>
-        <p className="line-clamp-1 text-xl font-semibold tracking-small text-brand-primary">
-          {data.word}
-        </p>
-      </div>
-      <div className="flex h-fit w-full flex-col items-start justify-start">
-        <p className="text-sm tracking-small text-brand-text">description</p>
-        <p className="line-clamp-2 text-lg font-semibold tracking-small text-brand-primary">
-          {data.definition}
-        </p>
-      </div>
-      <Button variant={"default"} className="mt-auto" size={"sm"}>
-        Add to Vocab
-      </Button>
-    </article>
   );
 }
 
