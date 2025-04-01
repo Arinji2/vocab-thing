@@ -1,4 +1,4 @@
-import Login from "@/app/auth/[provider]/callback/login.client";
+import Login from "./login.client";
 import { LoginProviders } from "@/data/login/login";
 import { formatCapitalize } from "@/utils/format";
 import { headers } from "next/headers";
@@ -18,6 +18,7 @@ export default function Page({
     </Suspense>
   );
 }
+
 async function SuspensedPage({
   params,
   searchParams,
@@ -47,9 +48,12 @@ async function SuspensedPage({
     "0.0.0.0";
   const userAgent = headerStore.get("user-agent") ?? "Unknown";
   return (
-    <div className="h-fit flex flex-col items-center justify-center py-4 gap-10 w-full xl:h-full-navbar screen-padding ">
+    <div className="flex flex-col items-center justify-center py-4 gap-10 w-full h-full-navbar screen-padding ">
       <h1 className="text-3xl text-center md:text-5xl font-bold text-brand-text tracking-large">
-        Logging In With {formatCapitalize(validatedProvider.data)}
+        Logging In With{" "}
+        <span className="text-brand-accent">
+          {formatCapitalize(validatedProvider.data)}
+        </span>
       </h1>
       <Login
         providerType={validatedProvider.data}

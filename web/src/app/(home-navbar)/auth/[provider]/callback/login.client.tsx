@@ -47,7 +47,6 @@ export default function Login({
       if (actionState.success) {
         router.push("/dashboard");
       } else {
-        console.log("TEST");
         router.push("/login");
       }
     }
@@ -57,16 +56,21 @@ export default function Login({
     const timer = setTimeout(() => {
       setTimeElapsed(timeElapsed + 1);
     }, 1000);
+    if (timeElapsed > 60) {
+      setTimeout(() => {
+        router.push("/login");
+      }, 2000);
+    }
     return () => clearTimeout(timer);
-  }, [timeElapsed]);
+  }, [timeElapsed, router]);
 
   return (
-    <div className="w-full h-fit flex flex-col items-center justify-center">
+    <div className="w-full h-fit flex flex-col items-center gap-6 justify-center">
       <div className="text-brand-text w-full h-fit flex flex-col items-center justify-center gap-6">
-        <div className="w-full h-fit flex flex-row items-center justify-center gap-2">
+        <div className="text-xl font-medium tracking-large w-full h-fit flex flex-row items-center justify-center gap-2">
           <Loader2
             className="animate-spin text-brand-accent"
-            size={20}
+            size={25}
             strokeWidth={3}
           />{" "}
           Authenticating Securely
@@ -76,6 +80,13 @@ export default function Login({
       {!isPending && "error" in actionState && (
         <div className="text-red-500">
           Authentication failed. Redirecting to login...
+        </div>
+      )}
+      {timeElapsed > 60 && (
+        <div className="flex flex-col items-center justify-center">
+          <p className="text-xl text-brand-destructive-light">
+            Authentication timed out. Redirecting to login...
+          </p>
         </div>
       )}
     </div>
