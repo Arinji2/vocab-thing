@@ -3,7 +3,7 @@ import { LoginProvidersType, OauthCallbackURLSchema } from "./login";
 import { getApiURL } from "@/data/utils/getApiURL";
 import { setServerCookies } from "../utils/setServerCookie";
 import { cookies } from "next/headers";
-import { ErrorResponseSchema, HandleResponseError } from "@/data/errors";
+import { HandleResponseError } from "@/data/errors";
 
 export type OauthCallbackURLActionState =
   | { providerType: LoginProvidersType }
