@@ -1,4 +1,3 @@
-import { OtherWords } from "@/app/(home-navbar)/(home)/other-word";
 import { Words, WordsLoading } from "./word";
 import { Button } from "@/components/ui/button";
 import { ErrorWrapper } from "@/components/ui/error-boundary";
