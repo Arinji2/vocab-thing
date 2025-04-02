@@ -1,5 +1,6 @@
 import { Viewport } from "next";
 import { Tektur } from "next/font/google";
+import { Toaster } from "@/components/ui/sonner";
 import type React from "react";
 import { generateTitle, generateDescription } from "@/utils/generateMetadata";
 import "./globals.css";
@@ -42,6 +43,8 @@ export default function RootLayout({
       >
         <div className="flex w-full max-w-[1280px] flex-col items-center justify-start">
           {children}
+
+          <Toaster font={tektur} />
         </div>
       </body>
     </html>
