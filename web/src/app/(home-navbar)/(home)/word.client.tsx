@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { WordSchemaType } from "@/data/words";
 import { useRouter } from "next/navigation";
-
+import { toast } from "sonner";
 export function WordCard({
   data,
   isLoggedIn,
@@ -28,6 +28,7 @@ export function WordCard({
       </div>
       <Button
         onClick={() => {
+          toast.success(`${data.word} Added to Vocab`);
           localStorage.setItem("homepage-word", data.word);
           localStorage.setItem("homepage-definition", data.definition);
           if (isLoggedIn) {
