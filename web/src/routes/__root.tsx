@@ -11,6 +11,7 @@ import appCss from '../styles.css?url'
 
 import type { QueryClient } from '@tanstack/react-query'
 import { generateDescription, generateTitle } from '@/lib/metadata'
+import GlobalLoading from '@/components/loading.global'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -74,6 +75,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       { rel: 'manifest', href: '/metadata/site.webmanifest' },
     ],
   }),
+  pendingComponent: () => <GlobalLoading />,
 
   component: () => (
     <RootDocument>
