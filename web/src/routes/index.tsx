@@ -1,4 +1,3 @@
-import { isLoggedInQuick } from '@/lib/isLoggedIn'
 import { wordsQueryOptions } from '@/lib/queries/fetchWords'
 import { createFileRoute } from '@tanstack/react-router'
 
