@@ -37,4 +37,6 @@ export const wordsQueryOptions = queryOptions({
   queryFn: fetchWords,
   staleTime: Infinity,
   gcTime: 1000 * 60 * 60, // 1 hour
+  refetchOnWindowFocus: false,
+  refetchOnMount: false,
 })
