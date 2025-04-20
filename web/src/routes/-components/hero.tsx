@@ -10,7 +10,7 @@ import { Words } from './word'
 export default function Hero() {
   return (
     <div className="xl:h-full-navbar relative flex h-fit w-full flex-col items-start justify-stretch">
-      <div className="screen-padding relative z-20 flex h-full w-full flex-col items-start justify-start gap-14 py-8 md:gap-6 xl:py-12">
+      <div className="relative z-20 flex h-full w-full flex-col items-start justify-start gap-14 py-8 md:gap-6 xl:py-12">
         <h1 className="text-2xl font-medium tracking-large text-brand-text md:text-4xl">
           Save words and phrases you find on the internet, <br /> and use them
           in the future effortlessly
