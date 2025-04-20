@@ -5,7 +5,7 @@ type Props = (
       width: number
       height: number
       fill?: false
-      priority?: false
+      priority?: boolean
     }
   | {
       srcLocation: string
@@ -13,7 +13,7 @@ type Props = (
       fill: true
       width?: never
       height?: never
-      priority?: false
+      priority?: boolean
     }
 ) &
   React.ImgHTMLAttributes<HTMLImageElement>
