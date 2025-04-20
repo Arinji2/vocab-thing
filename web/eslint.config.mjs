@@ -6,6 +6,8 @@ export default [
   {
     rules: {
       'import/order': 'off',
+      'import/consistent-type-specifier-style': 'off',
+      'sort-imports': 'off',
     },
   },
 ]
