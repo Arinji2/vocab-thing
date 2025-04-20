@@ -12,6 +12,7 @@ import appCss from '../styles.css?url'
 import type { QueryClient } from '@tanstack/react-query'
 import { generateDescription, generateTitle } from '@/lib/metadata'
 import GlobalLoading from '@/components/loading.global'
+import { Toaster } from '@/components/ui/sonner'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -111,12 +112,17 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className="bg-brand-background">
       <head>
         <HeadContent />
       </head>
-      <body>
-        {children}
+      <body
+        className={`flex h-full w-full flex-col items-center justify-start antialiased`}
+      >
+        <div className="flex w-full max-w-[1280px] flex-col items-center justify-start">
+          {children}
+          <Toaster />
+        </div>
         <Scripts />
       </body>
     </html>
