@@ -44,6 +44,29 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     ],
     links: [
       {
+        rel: 'preload',
+        href: '/fonts/Tektur-Regular.ttf',
+        as: 'font',
+        type: 'font/ttf',
+        crossOrigin: 'anonymous',
+      },
+
+      {
+        rel: 'preload',
+        href: '/fonts/Tektur-Medium.ttf',
+        as: 'font',
+        type: 'font/ttf',
+        crossOrigin: 'anonymous',
+      },
+
+      {
+        rel: 'preload',
+        href: '/fonts/Tektur-Bold.ttf',
+        as: 'font',
+        type: 'font/ttf',
+        crossOrigin: 'anonymous',
+      },
+      {
         rel: 'stylesheet',
         href: appCss,
       },
