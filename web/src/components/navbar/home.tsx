@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { getRouteApi, Link } from '@tanstack/react-router'
 import { Suspense } from 'react'
 
 import { Button } from '../ui/button'
@@ -27,15 +27,21 @@ export function HomeNavbar() {
           className="block object-cover md:hidden"
         />
       </Link>
-      <Suspense
-        fallback={
-          <Button asChild disabled variant={'secondary'}>
-            Get Started
-          </Button>
-        }
-      >
-        <Button variant={'default'}>Login</Button>
-      </Suspense>
+      <LoginButton />
     </div>
+  )
+}
+
+function LoginButton() {
+  const routeApi = getRouteApi('__root__')
+  const loaderData = routeApi.useLoaderData()
+  const { isLoggedIn } = loaderData
+
+  return (
+    <Button asChild variant={'secondary'}>
+      <Link to={isLoggedIn ? '/dashboard' : '/login'}>
+        {isLoggedIn ? 'Dashboard' : 'Get Started'}
+      </Link>
+    </Button>
   )
 }
