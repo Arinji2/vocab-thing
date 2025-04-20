@@ -1,7 +1,6 @@
 import { ErrorWrapper } from '@/components/error'
 import { Button } from '@/components/ui/button'
 import OptimizedImage from '@/lib/image'
-import { isLoggedInQuick } from '@/lib/isLoggedIn'
 import { getRouteApi, Link } from '@tanstack/react-router'
 import type { RequestHeaders } from '@tanstack/react-start/server'
 import { Suspense } from 'react'
@@ -9,9 +8,6 @@ import { Suspense } from 'react'
 import { Words } from './word'
 
 export default function Hero() {
-  const routeApi = getRouteApi('/')
-  const loaderData = routeApi.useLoaderData()
-  const { isLoggedIn } = loaderData
   return (
     <div className="xl:h-full-navbar relative flex h-fit w-full flex-col items-start justify-stretch">
       <div className="screen-padding relative z-20 flex h-full w-full flex-col items-start justify-start gap-14 py-8 md:gap-6 xl:py-12">

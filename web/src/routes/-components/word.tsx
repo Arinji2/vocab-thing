@@ -56,7 +56,7 @@ function WordSuspenseCard() {
 
 export function WordCard({ data }: { data: WordSchemaType }) {
   const navigate = useNavigate()
-  const routeApi = getRouteApi('/')
+  const routeApi = getRouteApi('__root__')
   const loaderData = routeApi.useLoaderData()
   const { isLoggedIn } = loaderData
   return (

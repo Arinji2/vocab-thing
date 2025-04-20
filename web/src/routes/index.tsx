@@ -10,13 +10,6 @@ import Works from './-components/works'
 
 export const Route = createFileRoute('/')({
   component: App,
-  loader: async ({ context }) => {
-    const isLoggedIn = await isLoggedInQuick()
-    context.queryClient.ensureQueryData(wordsQueryOptions)
-    return {
-      isLoggedIn,
-    }
-  },
 })
 
 function App() {

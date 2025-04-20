@@ -2,6 +2,7 @@ import GlobalLoading from '@/components/loading.global'
 import { HomeNavbar } from '@/components/navbar/home'
 import { GlobalNotFound } from '@/components/not-found.global'
 import { Toaster } from '@/components/ui/sonner'
+import { checkSessionCookie } from '@/lib/isLoggedIn'
 import { generateDescription, generateTitle } from '@/lib/metadata'
 import type { QueryClient } from '@tanstack/react-query'
 import {
@@ -102,6 +103,12 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   }),
   pendingComponent: () => <GlobalLoading />,
   notFoundComponent: () => <GlobalNotFound />,
+  loader: async () => {
+    const isLoggedIn = await checkSessionCookie()
+    return {
+      isLoggedIn,
+    }
+  },
 
   component: () => (
     <RootDocument>
