@@ -1,18 +1,19 @@
+import GlobalLoading from '@/components/loading.global'
+import { HomeNavbar } from '@/components/navbar/home'
+import { GlobalNotFound } from '@/components/not-found.global'
+import { Toaster } from '@/components/ui/sonner'
+import { generateDescription, generateTitle } from '@/lib/metadata'
+import type { QueryClient } from '@tanstack/react-query'
 import {
+  createRootRouteWithContext,
   HeadContent,
   Outlet,
   Scripts,
-  createRootRouteWithContext,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 
 import TanstackQueryLayout from '../integrations/tanstack-query/layout'
 import appCss from '../styles.css?url'
-
-import type { QueryClient } from '@tanstack/react-query'
-import { generateDescription, generateTitle } from '@/lib/metadata'
-import GlobalLoading from '@/components/loading.global'
-import { Toaster } from '@/components/ui/sonner'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -100,6 +101,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     ],
   }),
   pendingComponent: () => <GlobalLoading />,
+  notFoundComponent: () => <GlobalNotFound />,
 
   component: () => (
     <RootDocument>
@@ -120,6 +122,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         className={`flex h-full w-full flex-col items-center justify-start antialiased`}
       >
         <div className="flex w-full max-w-[1280px] flex-col items-center justify-start">
+          <HomeNavbar />
           {children}
           <Toaster />
         </div>
