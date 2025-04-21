@@ -3,6 +3,7 @@ import type { ClassValue } from 'clsx'
 import { useState } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
 import { Button } from './ui/button'
+import { Link } from '@tanstack/react-router'
 
 export function ErrorWrapper({
   children,
@@ -32,5 +33,24 @@ export function ErrorWrapper({
         {children}
       </div>
     </ErrorBoundary>
+  )
+}
+
+export function RouteError() {
+  return (
+    <div className="flex min-h-screen w-full flex-col items-center justify-center gap-6 bg-brand-destructive-dark text-brand-text px-4">
+      <h1 className="text-3xl font-bold tracking-large">
+        Oops! Something went wrong.
+      </h1>
+      <p className="text-lg text-brand-text/80 max-w-md text-center">
+        The page failed to load properly or some required data was missing.
+      </p>
+      <Link
+        to="/"
+        className="rounded-xl bg-brand-primary px-6 py-3 text-black text-lg font-medium transition hover:bg-brand-primary-dark"
+      >
+        Go back home
+      </Link>
+    </div>
   )
 }
