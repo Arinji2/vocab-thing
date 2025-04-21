@@ -12,12 +12,33 @@
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as IndexImport } from './routes/index'
+import { Route as LoginIndexImport } from './routes/login/index'
+import { Route as DashboardIndexImport } from './routes/dashboard/index'
+import { Route as AuthProviderCallbackIndexImport } from './routes/auth.$provider.callback/index'
 
 // Create/Update Routes
 
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const LoginIndexRoute = LoginIndexImport.update({
+  id: '/login/',
+  path: '/login/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const DashboardIndexRoute = DashboardIndexImport.update({
+  id: '/dashboard/',
+  path: '/dashboard/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AuthProviderCallbackIndexRoute = AuthProviderCallbackIndexImport.update({
+  id: '/auth/$provider/callback/',
+  path: '/auth/$provider/callback/',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -32,6 +53,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardIndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/login/': {
+      id: '/login/'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginIndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/auth/$provider/callback/': {
+      id: '/auth/$provider/callback/'
+      path: '/auth/$provider/callback'
+      fullPath: '/auth/$provider/callback'
+      preLoaderRoute: typeof AuthProviderCallbackIndexImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -39,32 +81,47 @@ declare module '@tanstack/react-router' {
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardIndexRoute
+  '/login': typeof LoginIndexRoute
+  '/auth/$provider/callback': typeof AuthProviderCallbackIndexRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardIndexRoute
+  '/login': typeof LoginIndexRoute
+  '/auth/$provider/callback': typeof AuthProviderCallbackIndexRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/login/': typeof LoginIndexRoute
+  '/auth/$provider/callback/': typeof AuthProviderCallbackIndexRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/dashboard' | '/login' | '/auth/$provider/callback'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/dashboard' | '/login' | '/auth/$provider/callback'
+  id: '__root__' | '/' | '/dashboard/' | '/login/' | '/auth/$provider/callback/'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
+  LoginIndexRoute: typeof LoginIndexRoute
+  AuthProviderCallbackIndexRoute: typeof AuthProviderCallbackIndexRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
+  LoginIndexRoute: LoginIndexRoute,
+  AuthProviderCallbackIndexRoute: AuthProviderCallbackIndexRoute,
 }
 
 export const routeTree = rootRoute
@@ -77,11 +134,23 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/"
+        "/",
+        "/dashboard/",
+        "/login/",
+        "/auth/$provider/callback/"
       ]
     },
     "/": {
       "filePath": "index.tsx"
+    },
+    "/dashboard/": {
+      "filePath": "dashboard/index.tsx"
+    },
+    "/login/": {
+      "filePath": "login/index.tsx"
+    },
+    "/auth/$provider/callback/": {
+      "filePath": "auth.$provider.callback/index.tsx"
     }
   }
 }
