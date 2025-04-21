@@ -15,6 +15,7 @@ import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 
 import TanstackQueryLayout from '../integrations/tanstack-query/layout'
 import appCss from '../styles.css?url'
+import { RouteError } from '@/components/error'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -103,6 +104,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   }),
   pendingComponent: () => <GlobalLoading />,
   notFoundComponent: () => <GlobalNotFound />,
+  errorComponent: () => <RouteError />,
   loader: async () => {
     const isLoggedIn = await checkSessionCookie()
     return {
