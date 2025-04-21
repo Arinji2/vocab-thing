@@ -79,9 +79,13 @@ export function WordCard({ data }: { data: WordSchemaType }) {
           localStorage.setItem('homepage-word', data.word)
           localStorage.setItem('homepage-definition', data.definition)
           if (isLoggedIn) {
-            navigate('/dashboard')
+            navigate({
+              to: '/dashboard',
+            })
           } else {
-            navigate('/login')
+            navigate({
+              to: '/login',
+            })
           }
         }}
         variant={'default'}
