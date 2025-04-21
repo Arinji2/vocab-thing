@@ -3,14 +3,16 @@ import { getCookie, getEvent } from '@tanstack/react-start/server'
 import { parse } from 'cookie'
 
 /**
- * Quick check: just verifies if an `oauth_session` cookie exists.
+ * Quick check: just verifies if an `session` cookie exists.
  */
 export const checkSessionCookie = createServerFn({ method: 'GET' }).handler(
   () => {
     const event = getEvent()
-    const cookie = getCookie(event, 'oauth_session')
-    const cookies = parse(cookie ?? '')
-    return Boolean(cookies['oauth_session'])
+    const cookieHeader = event.node.req.headers.cookie
+    console.log('full cookie header:', cookieHeader)
+
+    const cookie = getCookie(event, 'session')
+    return Boolean(cookie)
   },
 )
 
@@ -22,7 +24,7 @@ export const validateSessionCookie = async (req: Request): Promise<boolean> => {
   await new Promise((resolve) => setTimeout(resolve, 10))
   const cookieHeader = req.headers.get('cookie') ?? ''
   const cookies = parse(cookieHeader)
-  const sessionToken = cookies['oauth_session']
+  const sessionToken = cookies['session']
   if (!sessionToken) return false
   return true
 }
