@@ -1,21 +1,13 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import { tanstackConfig } from '@tanstack/eslint-config'
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+export default [
+  ...tanstackConfig,
 
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     rules: {
-      "@next/next/no-img-element": "off",
+      'import/order': 'off',
+      'import/consistent-type-specifier-style': 'off',
+      'sort-imports': 'off',
     },
   },
-];
-
-export default eslintConfig;
+]

@@ -1,0 +1,88 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Letter Spacing */
+  --letter-spacing-small: 0.04rem;
+  --letter-spacing-large: 0.08rem;
+
+  /* Height */
+  --navbar-height: 90px;
+
+  /* Brand Colors */
+  --color-brand-text: #e5f9fa;
+  --color-brand-offwhite: #6b7280;
+  --color-brand-offwhite-dark: #374151;
+  --color-brand-offwhite-light: #9ca3af;
+  --color-brand-destructive: #ef4444;
+  --color-brand-destructive-dark: #b91c1c;
+  --color-brand-destructive-light: #fa575f;
+  --color-brand-background: #041518;
+  --color-brand-primary: #89dfe9;
+  --color-brand-primary-dark: #0f2d30;
+  --color-brand-secondary: #4a1882;
+  --color-brand-secondary-dark: #260e40;
+  --color-brand-accent: #df4fd6;
+
+  --tracking-small: var(--letter-spacing-small);
+  --tracking-large: var(--letter-spacing-large);
+
+  --height-navbar: var(--navbar-height);
+  --height-full-navbar: calc(100svh - var(--navbar-height));
+}
+
+@utility screen-padding {
+  @apply px-4 md:px-2 2xl:px-0;
+}
+
+@font-face {
+  font-family: 'Tektur';
+  src: url('/fonts/Tektur-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tektur';
+  src: url('/fonts/Tektur-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tektur';
+  src: url('/fonts/Tektur-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tektur';
+  src: url('/fonts/Tektur-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tektur';
+  src: url('/fonts/tektur/Tektur-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tektur';
+  src: url('/fonts/Tektur-Black.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+html,
+body {
+  font-family: 'Tektur', sans-serif;
+}
