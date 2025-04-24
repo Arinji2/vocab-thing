@@ -49,6 +49,7 @@ func (p *PhraseHandler) CreatePhrase(w http.ResponseWriter, r *http.Request) {
 		FoundIn:          data.FoundIn,
 		Public:           data.Public,
 		CreatedAt:        time.Now().UTC(),
+		UpdatedAt:        time.Now().UTC(),
 	}
 	err := phraseModel.CreatePhrase(ctx, &phraseData)
 	if err != nil {

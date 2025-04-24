@@ -31,15 +31,17 @@ type Session struct {
 }
 
 type Phrase struct {
-	ID               string    `json:"id" sql:"id"`
-	UserID           string    `json:"user_id" sql:"userId"`
-	Phrase           string    `json:"phrase" sql:"phrase"`
-	PhraseDefinition string    `json:"phrase_definition" sql:"phraseDefinition"`
-	Pinned           bool      `json:"pinned" sql:"pinned"`
-	FoundIn          string    `json:"found_in" sql:"foundIn"`
-	Public           bool      `json:"public" sql:"public"`
-	UsageCount       int       `json:"usage_count" sql:"usageCount"`
-	CreatedAt        time.Time `json:"created_at" sql:"createdAt"`
+	ID               string     `json:"id" sql:"id"`
+	UserID           string     `json:"user_id" sql:"userId"`
+	Phrase           string     `json:"phrase" sql:"phrase"`
+	PhraseDefinition string     `json:"phrase_definition" sql:"phraseDefinition"`
+	Pinned           bool       `json:"pinned" sql:"pinned"`
+	FoundIn          string     `json:"found_in" sql:"foundIn"`
+	Public           bool       `json:"public" sql:"public"`
+	UsageCount       int        `json:"usage_count" sql:"usageCount"`
+	CreatedAt        time.Time  `json:"created_at" sql:"createdAt"`
+	UpdatedAt        time.Time  `json:"updated_at" sql:"updatedAt"`
+	DeletedAt        *time.Time `json:"deleted_at" sql:"deletedAt"`
 }
 
 type PhraseTag struct {

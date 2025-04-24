@@ -76,7 +76,7 @@ func (p *PhraseModel) CreateTag(ctx context.Context, phrase *models.PhraseTag) e
 
 func (p *PhraseModel) ByID(ctx context.Context, id string, userID string) (*models.TaggedPhrase, error) {
 	query := `
-        SELECT p.id, p.userId, p.phrase, p.phraseDefinition, p.pinned, p.foundIn, p.public, p.usageCount, p.createdAt, 
+        SELECT p.id, p.userId, p.phrase, p.phraseDefinition, p.pinned, p.foundIn, p.public, p.usageCount, p.createdAt, p.updatedAt, p.deletedAt,
         pt.id, pt.phraseId, pt.tagName, pt.tagColor, pt.createdAt
         FROM phrases p
         LEFT JOIN phrase_tags pt ON p.id = pt.phraseId
@@ -131,151 +131,120 @@ func (p *PhraseModel) CountTotalPages(ctx context.Context, pageSize int, userID 
 }
 
 func (p *PhraseModel) All(ctx context.Context, pageNumber, pageSize int, sortBy, order, groupBy string, userID string) ([]models.TaggedPhrase, error) {
+	if sortBy == "" {
+		sortBy = "createdAt"
+	}
+	if order == "" || (strings.ToUpper(order) != "ASC" && strings.ToUpper(order) != "DESC") {
+		order = "DESC"
+	}
+
 	totalPages, err := p.CountTotalPages(ctx, pageSize, userID)
 	if err != nil {
-		return nil, fmt.Errorf("counting total pages: %w", err)
+		log.Printf("Error counting total pages for user %s: %v", userID, err)
+		return nil, errorcode.ErrDBQuery
 	}
+
 	if totalPages == 0 {
 		return []models.TaggedPhrase{}, nil
 	}
+
 	if pageNumber > totalPages {
 		return nil, fmt.Errorf("page number %d is greater than total pages %d", pageNumber, totalPages)
 	}
 
-	phrasesQuery := fmt.Sprintf(`
-        SELECT id, userId, phrase, phraseDefinition, pinned, foundIn, public, usageCount, createdAt
-        FROM phrases
-        WHERE userId = ?
-        ORDER BY %s %s
-        LIMIT ? OFFSET ?
-    `, sortBy, order)
+	query := fmt.Sprintf(`
+		SELECT
+			p.id, p.userId, p.phrase, p.phraseDefinition, p.pinned, p.foundIn, p.public, p.usageCount, p.createdAt, p.updatedAt, p.deletedAt,
+			pt.id, pt.phraseId, pt.tagName, pt.tagColor, pt.createdAt
+		FROM phrases p
+		LEFT JOIN phrase_tags pt ON p.id = pt.phraseId
+		WHERE p.userId = ? AND p.deletedAt IS NULL
+		ORDER BY p.%s %s, p.id
+		LIMIT ? OFFSET ?
+	`, sortBy, order)
+
 	offset := (pageNumber - 1) * pageSize
-	phraseRows, err := p.DB.QueryContext(ctx, phrasesQuery, userID, pageSize, offset)
+
+	rows, err := p.DB.QueryContext(ctx, query, userID, pageSize, offset)
 	if err != nil {
-		return nil, fmt.Errorf("querying paginated phrases: %w", err)
+		log.Printf("Error querying paginated tagged phrases for user %s: %v", userID, err)
+		return nil, errorcode.ErrDBQuery
 	}
-	defer phraseRows.Close()
+	defer rows.Close()
 
-	var phrases []models.TaggedPhrase
-	phraseIDs := []string{}
-	phraseIndex := make(map[string]int) // Map to track index of phrases in slice
+	taggedPhrasesMap := make(map[string]*models.TaggedPhrase)
+	orderedPhraseIDs := []string{}
 
-	for phraseRows.Next() {
-		var phrase models.Phrase
-		var phraseCreatedAtStr string
-
-		err = phraseRows.Scan(
-			&phrase.ID,
-			&phrase.UserID,
-			&phrase.Phrase,
-			&phrase.PhraseDefinition,
-			&phrase.Pinned,
-			&phrase.FoundIn,
-			&phrase.Public,
-			&phrase.UsageCount,
-			&phraseCreatedAtStr,
-		)
+	for rows.Next() {
+		phrase, tag, err := scanTaggedPhrase(rows)
 		if err != nil {
-			return nil, fmt.Errorf("scanning phrase row: %w", err)
+			log.Printf("Error scanning tagged phrase row during All() for user %s: %v", userID, err)
+			continue
 		}
 
-		phrase.CreatedAt, err = utils.StringToTime(phraseCreatedAtStr)
-		if err != nil {
-			log.Printf("Warning: could not parse createdAt '%s' for phrase %s", phraseCreatedAtStr, phrase.Phrase)
-			phrase.CreatedAt = time.Now().UTC()
+		if _, exists := taggedPhrasesMap[phrase.ID]; !exists {
+			taggedPhrasesMap[phrase.ID] = &models.TaggedPhrase{
+				Phrase: phrase,
+				Tag:    []models.PhraseTag{},
+			}
+			orderedPhraseIDs = append(orderedPhraseIDs, phrase.ID)
 		}
 
-		phraseIDs = append(phraseIDs, phrase.ID)
-		phraseIndex[phrase.ID] = len(phrases)
-		phrases = append(phrases, models.TaggedPhrase{Phrase: phrase, Tag: []models.PhraseTag{}})
-	}
-
-	if err := phraseRows.Err(); err != nil {
-		return nil, fmt.Errorf("iterating phrase rows: %w", err)
-	}
-
-	if len(phraseIDs) == 0 {
-		return []models.TaggedPhrase{}, nil
-	}
-
-	placeholders := make([]string, len(phraseIDs))
-	args := make([]any, len(phraseIDs))
-	for i, id := range phraseIDs {
-		placeholders[i] = "?"
-		args[i] = id
-	}
-
-	tagsQuery := fmt.Sprintf(`
-        SELECT id, phraseId, tagName, tagColor, createdAt
-        FROM phrase_tags
-        WHERE phraseId IN (%s)
-    `, strings.Join(placeholders, ","))
-
-	tagRows, err := p.DB.QueryContext(ctx, tagsQuery, args...)
-	if err != nil {
-		return nil, fmt.Errorf("querying tags: %w", err)
-	}
-	defer tagRows.Close()
-
-	for tagRows.Next() {
-		var tag models.PhraseTag
-		var tagCreatedAtStr string
-
-		err = tagRows.Scan(&tag.ID, &tag.PhraseID, &tag.TagName, &tag.TagColor, &tagCreatedAtStr)
-		if err != nil {
-			return nil, fmt.Errorf("scanning tag row: %w", err)
-		}
-
-		tag.CreatedAt, err = utils.StringToTime(tagCreatedAtStr)
-		if err != nil {
-			log.Printf("Warning: could not parse createdAt '%s' for phrase tag %s", tagCreatedAtStr, tag.TagName)
-			tag.CreatedAt = time.Now().UTC()
-		}
-
-		if idx, exists := phraseIndex[tag.PhraseID]; exists {
-			phrases[idx].Tag = append(phrases[idx].Tag, tag)
+		if tag != nil {
+			if taggedPhrasesMap[phrase.ID].Tag == nil {
+				taggedPhrasesMap[phrase.ID].Tag = []models.PhraseTag{}
+			}
+			taggedPhrasesMap[phrase.ID].Tag = append(taggedPhrasesMap[phrase.ID].Tag, *tag)
 		}
 	}
 
-	if err := tagRows.Err(); err != nil {
-		return nil, fmt.Errorf("iterating tag rows: %w", err)
+	if err = rows.Err(); err != nil {
+		log.Printf("Error iterating tagged phrase rows during All() for user %s: %v", userID, err)
+		return nil, errorcode.ErrDBQuery
 	}
+
+	finalPhrases := make([]models.TaggedPhrase, 0, len(orderedPhraseIDs))
+	for _, id := range orderedPhraseIDs {
+		finalPhrases = append(finalPhrases, *taggedPhrasesMap[id])
+	}
+
 	if groupBy == "foundIn" || groupBy == "public" {
 		grouped := make(map[string][]models.TaggedPhrase)
 		orderedGroups := []string{}
 
-		for _, phrase := range phrases {
+		for _, taggedPhrase := range finalPhrases {
+			var key string
 			switch groupBy {
 			case "foundIn":
-				if _, exists := grouped[phrase.Phrase.FoundIn]; !exists {
-					orderedGroups = append(orderedGroups, phrase.Phrase.FoundIn)
+				key = taggedPhrase.Phrase.FoundIn
+				if key == "" {
+					key = "[Unknown Source]"
 				}
-				grouped[phrase.Phrase.FoundIn] = append(grouped[phrase.Phrase.FoundIn], phrase)
-
 			case "public":
-				if _, exists := grouped[strconv.FormatBool(phrase.Phrase.Public)]; !exists {
-					orderedGroups = append(orderedGroups, strconv.FormatBool(phrase.Phrase.Public))
-				}
-				grouped[strconv.FormatBool(phrase.Phrase.Public)] = append(grouped[strconv.FormatBool(phrase.Phrase.Public)], phrase)
+				key = strconv.FormatBool(taggedPhrase.Phrase.Public)
 			}
+
+			if _, exists := grouped[key]; !exists {
+				orderedGroups = append(orderedGroups, key)
+			}
+			grouped[key] = append(grouped[key], taggedPhrase)
 		}
 
 		var groupedPhrases []models.TaggedPhrase
-		for _, foundIn := range orderedGroups {
-			groupedPhrases = append(groupedPhrases, grouped[foundIn]...)
+		for _, groupKey := range orderedGroups {
+			groupedPhrases = append(groupedPhrases, grouped[groupKey]...)
 		}
-
 		return groupedPhrases, nil
 	}
 
-	return phrases, nil
+	return finalPhrases, nil
 }
 
 func (p *PhraseModel) Search(ctx context.Context, searchTerm, userID string) ([]models.Phrase, error) {
 	searchQuery := "%" + strings.ToLower(searchTerm) + "%"
 
 	query := `
-		SELECT id, userId, phrase, phraseDefinition, pinned, foundIn, public, usageCount, createdAt
+		SELECT id, userId, phrase, phraseDefinition, pinned, foundIn, public, usageCount, createdAt, updatedAt, deletedAt
 		FROM phrases
 		WHERE userId = ? 
 		AND LOWER(phrase || ' ' || phraseDefinition) LIKE ?
@@ -335,13 +304,13 @@ func (p *PhraseModel) UpdatePhrase(ctx context.Context, phrase *models.Phrase, u
 	defer tx.Rollback()
 	phrase.CreatedAt = time.Now().UTC()
 	query := `
-            UPDATE phrases SET phrase = ?, phraseDefinition = ?, pinned = ?, foundIn = ?, public = ?, usageCount = ?
+            UPDATE phrases SET phrase = ?, phraseDefinition = ?, pinned = ?, foundIn = ?, public = ?, usageCount = ?, updatedAt = ?
             WHERE id = ? AND userId = ?
             `
 
 	res, err := tx.ExecContext(ctx, query,
 		phrase.Phrase, phrase.PhraseDefinition, phrase.Pinned,
-		phrase.FoundIn, phrase.Public, phrase.UsageCount,
+		phrase.FoundIn, phrase.Public, phrase.UsageCount, time.Now().UTC(),
 		phrase.ID, userID,
 	)
 	if err != nil {
@@ -412,10 +381,11 @@ func (p *PhraseModel) DeletePhrase(ctx context.Context, phraseID, userID string)
 
 	defer tx.Rollback()
 	query := `
-            DELETE FROM phrases WHERE id = ? AND userId = ?
+            UPDATE phrases SET deletedAt =?
+            WHERE id = ? AND userId = ?
             `
 
-	res, err := tx.ExecContext(ctx, query, phraseID, userID)
+	res, err := tx.ExecContext(ctx, query, time.Now().UTC(), phraseID, userID)
 	if err != nil {
 		return fmt.Errorf("error deleting phrase (id: %s, userID: %s): %w", phraseID, userID, err)
 	}
@@ -480,8 +450,8 @@ type scanner interface {
 
 func scanTaggedPhrase(scanner scanner) (models.Phrase, *models.PhraseTag, error) {
 	var phrase models.Phrase
-	var phraseCreatedAtStr string
-	var tagID, tagPhraseID, tagName, tagColor, tagCreatedAtStr sql.NullString
+	var phraseCreatedAtStr, phraseUpdatedAtStr string
+	var phraseDeletedAtStr, tagID, tagPhraseID, tagName, tagColor, tagCreatedAtStr sql.NullString
 
 	err := scanner.Scan(
 		&phrase.ID,
@@ -493,6 +463,8 @@ func scanTaggedPhrase(scanner scanner) (models.Phrase, *models.PhraseTag, error)
 		&phrase.Public,
 		&phrase.UsageCount,
 		&phraseCreatedAtStr,
+		&phraseUpdatedAtStr,
+		&phraseDeletedAtStr,
 		&tagID,
 		&tagPhraseID,
 		&tagName,
@@ -507,6 +479,21 @@ func scanTaggedPhrase(scanner scanner) (models.Phrase, *models.PhraseTag, error)
 	if err != nil {
 		log.Printf("Warning: could not parse createdAt '%s' for phrase %s", phraseCreatedAtStr, phrase.Phrase)
 		phrase.CreatedAt = time.Now().UTC()
+	}
+
+	phrase.UpdatedAt, err = utils.StringToTime(phraseUpdatedAtStr)
+	if err != nil {
+		log.Printf("Warning: could not parse updatedAt '%s' for phrase %s", phraseUpdatedAtStr, phrase.Phrase)
+		phrase.UpdatedAt = time.Now().UTC()
+	}
+
+	if phraseDeletedAtStr.Valid {
+		deletedAtTime, err := utils.StringToTime(phraseDeletedAtStr.String)
+		if err != nil {
+			log.Printf("Warning: could not parse deletedAt '%s' for phrase %s", phraseDeletedAtStr.String, phrase.Phrase)
+			phrase.DeletedAt = nil
+		}
+		phrase.DeletedAt = &deletedAtTime
 	}
 
 	if tagID.Valid && tagName.Valid {
