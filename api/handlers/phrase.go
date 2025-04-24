@@ -21,8 +21,8 @@ type PhraseHandler struct {
 
 type createPhraseRequest struct {
 	Phrase     string `json:"phrase"`
-	Definition string `json:"definition"`
-	FoundIn    string `json:"foundIn"`
+	Definition string `json:"phrase_definition"`
+	FoundIn    string `json:"found_in"`
 	Public     bool   `json:"public"`
 }
 
