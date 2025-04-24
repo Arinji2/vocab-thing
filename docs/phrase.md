@@ -19,7 +19,7 @@ All endpoints require an authenticated user session. This is taken from the cook
 **Endpoint:**
 
 ```
-POST /phrase/create
+POST /phrase/create/phrase
 ```
 
 **Request Body:**
@@ -54,7 +54,7 @@ POST /phrase/create
 **Endpoint:**
 
 ```
-POST /phrase/tag/create
+POST /phrase/create/tag
 ```
 
 **Request Body:**
