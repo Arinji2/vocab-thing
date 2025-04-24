@@ -184,10 +184,12 @@ PUT /phrase/{id}
 
 ```json
 {
-  "phrase": "string",
-  "definition": "string",
-  "foundIn": "string",
-  "public": true
+  "phrase": {
+    "phrase": "string",
+    "definition": "string",
+    "foundIn": "string",
+    "public": true
+  }
 }
 ```
 
