@@ -27,8 +27,8 @@ POST /phrase/create/phrase
 ```json
 {
   "phrase": "string",
-  "definition": "string",
-  "foundIn": "string",
+  "phrase_definition": "string",
+  "found_in": "string",
   "public": true
 }
 ```
