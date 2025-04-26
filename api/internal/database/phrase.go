@@ -115,7 +115,9 @@ func (p *PhraseModel) ByID(ctx context.Context, id string, userID string) (*mode
 	if !phraseLoaded {
 		return nil, fmt.Errorf("phrase with id %s not found", id)
 	}
-
+	if taggedPhrase.Tag == nil {
+		taggedPhrase.Tag = []models.PhraseTag{}
+	}
 	return &taggedPhrase, nil
 }
 
