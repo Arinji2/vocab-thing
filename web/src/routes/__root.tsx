@@ -2,7 +2,7 @@ import GlobalLoading from '@/components/loading.global'
 import { HomeNavbar } from '@/components/navbar/home'
 import { GlobalNotFound } from '@/components/not-found.global'
 import { Toaster } from '@/components/ui/sonner'
-import { checkSessionCookie } from '@/lib/isLoggedIn'
+import { checkSessionCookie } from '@/lib/is-logged-in'
 import { generateDescription, generateTitle } from '@/lib/metadata'
 import type { QueryClient } from '@tanstack/react-query'
 import {
