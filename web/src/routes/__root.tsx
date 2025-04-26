@@ -16,6 +16,7 @@ import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import TanstackQueryLayout from '../integrations/tanstack-query/layout'
 import appCss from '../styles.css?url'
 import { RouteError } from '@/components/error'
+import { SyncingProvider } from '@/lib/is-syncing'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -132,7 +133,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       >
         <div className="flex w-full max-w-[1280px] flex-col items-center justify-start">
           <HomeNavbar />
-          {children}
+          <SyncingProvider>{children}</SyncingProvider>
           <Toaster />
         </div>
         <Scripts />
