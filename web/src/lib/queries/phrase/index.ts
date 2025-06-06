@@ -73,7 +73,7 @@ const fetchPhrases = async (isSyncing: boolean): Promise<PhrasesResult> => {
   try {
     const data = await fetchPhrasesFromAPI()
     if (!isSyncing) {
-      ;(async () => {
+      void (async () => {
         try {
           await Promise.all(
             data.map(async (item) => {
