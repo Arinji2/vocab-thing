@@ -24,7 +24,7 @@ export default function Hero() {
         <div className="flex h-fit w-fit flex-row items-center justify-start gap-6">
           <ul className="flex h-fit w-fit flex-row flex-wrap items-center justify-start gap-6">
             <li className="relative whitespace-nowrap pl-7 text-lg tracking-small text-brand-text before:absolute before:left-0 before:top-1/2 before:size-5 before:-translate-y-1/2 before:rounded-full before:bg-brand-accent">
-              Offline Support
+              AI Integration
             </li>
             <li className="relative whitespace-nowrap pl-7 text-lg tracking-small text-brand-text before:absolute before:left-0 before:top-1/2 before:size-5 before:-translate-y-1/2 before:rounded-full before:bg-brand-accent">
               Chrome and Firefox Extension
