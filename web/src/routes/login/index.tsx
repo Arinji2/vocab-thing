@@ -7,12 +7,12 @@ import {
   type LoginProvidersType,
 } from '@/lib/queries/auth'
 import { cn } from '@/lib/utils'
-import { useMutation } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ClassValue } from 'clsx'
 import { CheckCircle2, Loader2 } from 'lucide-react'
 import { title } from 'radash'
-import { startTransition, useActionState, useEffect } from 'react'
+import { startTransition, useEffect } from 'react'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/login/')({
   component: RouteComponent,
@@ -127,7 +127,23 @@ function LoginButton({
     if (isOAuthSuccess && oauthData.codeURL) {
       window.location.href = oauthData.codeURL
     }
-  }, [isGuestSuccess, isOAuthSuccess, oauthData])
+
+    if (isOAuthError) {
+      toast.error(oauthError.message)
+    }
+
+    if (isGuestError) {
+      toast.error(guestError.message)
+    }
+  }, [
+    isGuestSuccess,
+    isOAuthSuccess,
+    oauthData,
+    isGuestError,
+    isOAuthError,
+    guestError,
+    oauthError,
+  ])
   return (
     <Button
       onClick={() => {
