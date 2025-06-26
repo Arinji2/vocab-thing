@@ -17,9 +17,9 @@ export default function Features() {
         />
 
         <FeatureCard
-          title="Offline Support"
-          description="Spotty connection? Vocab Thing works completely offline with all your data"
-          imageSrc="offline"
+          title="Blazingly Fast"
+          description="Built with Tanstack Start and optimized to work in the worst of connections "
+          imageSrc="fast"
         />
 
         <FeatureCard
