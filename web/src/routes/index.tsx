@@ -9,6 +9,9 @@ import Works from './-components/works'
 
 export const Route = createFileRoute('/')({
   component: App,
+  loader: async ({ context }) => {
+    await context.queryClient.prefetchQuery(wordsQueryOptions)
+  },
 })
 
 function App() {
