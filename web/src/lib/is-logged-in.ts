@@ -8,8 +8,6 @@ import { parse } from 'cookie'
 export const checkSessionCookie = createServerFn({ method: 'GET' }).handler(
   () => {
     const event = getEvent()
-    const cookieHeader = event.node.req.headers.cookie
-    console.log('full cookie header:', cookieHeader)
 
     const cookie = getCookie(event, 'session')
     return Boolean(cookie)

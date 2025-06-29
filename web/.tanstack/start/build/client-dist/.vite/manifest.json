@@ -1,0 +1,76 @@
+{
+  "../../../../../../~start/default-client-entry.tsx": {
+    "file": "assets/main-m5Ef5gMO.js",
+    "name": "main",
+    "src": "../../../../../../~start/default-client-entry.tsx",
+    "isEntry": true,
+    "dynamicImports": [
+      "src/routes/index.tsx?tsr-split=component",
+      "src/routes/login/index.tsx?tsr-split=component",
+      "src/routes/dashboard/index.tsx?tsr-split=errorComponent",
+      "src/routes/dashboard/index.tsx?tsr-split=component",
+      "src/routes/auth.$provider.callback/index.tsx?tsr-split=component"
+    ],
+    "assets": [
+      "assets/styles-DeyrnAYY.css"
+    ]
+  },
+  "/home/arinji/code/arinji/vocab-thing/web/src/styles.css": {
+    "file": "assets/styles-DeyrnAYY.css",
+    "src": "/home/arinji/code/arinji/vocab-thing/web/src/styles.css"
+  },
+  "_useQuery-CBQxszds.js": {
+    "file": "assets/useQuery-CBQxszds.js",
+    "name": "useQuery",
+    "imports": [
+      "../../../../../../~start/default-client-entry.tsx"
+    ]
+  },
+  "src/routes/auth.$provider.callback/index.tsx?tsr-split=component": {
+    "file": "assets/index-Cw8F2Rze.js",
+    "name": "index",
+    "src": "src/routes/auth.$provider.callback/index.tsx?tsr-split=component",
+    "isDynamicEntry": true,
+    "imports": [
+      "../../../../../../~start/default-client-entry.tsx"
+    ]
+  },
+  "src/routes/dashboard/index.tsx?tsr-split=component": {
+    "file": "assets/index-BCxCTNpJ.js",
+    "name": "index",
+    "src": "src/routes/dashboard/index.tsx?tsr-split=component",
+    "isDynamicEntry": true,
+    "imports": [
+      "../../../../../../~start/default-client-entry.tsx",
+      "_useQuery-CBQxszds.js"
+    ]
+  },
+  "src/routes/dashboard/index.tsx?tsr-split=errorComponent": {
+    "file": "assets/index-BjE6-V0I.js",
+    "name": "index",
+    "src": "src/routes/dashboard/index.tsx?tsr-split=errorComponent",
+    "isDynamicEntry": true,
+    "imports": [
+      "../../../../../../~start/default-client-entry.tsx"
+    ]
+  },
+  "src/routes/index.tsx?tsr-split=component": {
+    "file": "assets/index-oQLOsYN-.js",
+    "name": "index",
+    "src": "src/routes/index.tsx?tsr-split=component",
+    "isDynamicEntry": true,
+    "imports": [
+      "../../../../../../~start/default-client-entry.tsx",
+      "_useQuery-CBQxszds.js"
+    ]
+  },
+  "src/routes/login/index.tsx?tsr-split=component": {
+    "file": "assets/index-BX4JyBCp.js",
+    "name": "index",
+    "src": "src/routes/login/index.tsx?tsr-split=component",
+    "isDynamicEntry": true,
+    "imports": [
+      "../../../../../../~start/default-client-entry.tsx"
+    ]
+  }
+}
